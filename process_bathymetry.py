@@ -62,9 +62,6 @@ def compute_sections(bathymetry, picks):
     mask = remaining = ~np.isnan(bathymetry)
     sections = np.zeros_like(bathymetry)
     sections[~mask] = np.nan
-    # Keep track of the quantity of samples used in averaging sections.
-    quantities = np.zeros_like(bathymetry)
-    quantities[~mask] = np.nan
 
     coords = np.meshgrid(
         np.arange(bathymetry.shape[0]),
@@ -101,12 +98,7 @@ def compute_sections(bathymetry, picks):
         segment_length = .5 * len(y_)
         section = segment_length * np.mean(bathymetry[y_, x_])
 
-        x_, y_ = np.unique([x_, y_], axis=1)
-        sections[y_, x_] = (
-            (quantities[y_, x_]*sections[y_, x_] + section)
-            / (quantities[y_, x_] + 1)
-        )
-        quantities[y_, x_] += 1
+        sections[y, x] = section
         remaining[y, x] = False
 
     return sections
