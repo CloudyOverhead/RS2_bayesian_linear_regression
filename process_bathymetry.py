@@ -121,7 +121,15 @@ def compute_sections(bathymetry, closest_shore):
 
 
 def compute_linepoints(bathymetry, start_y, step_y, start_x, step_x):
-    y_, x_ = np.array(start_y), np.array(start_x)
+    if isinstance(start_y, np.ndarray):
+        y_ = start_y
+    else:
+        y_ = np.array([start_y])
+    if isinstance(start_y, np.ndarray):
+        x_ = start_x
+    else:
+        x_ = np.array([start_x])
+
     y_next, x_next = y_[-1] + step_y, x_[-1] + step_x
     while (
                 np.round(y_next).astype(int) < bathymetry.shape[0]
