@@ -88,23 +88,21 @@ def compute_sections(bathymetry, closest_shore):
         if (x-x_near) < 0:
             angle += np.pi
         step_y, step_x = .5 * np.sin(angle), .5 * np.cos(angle)
-        y_, x_ = np.array([y]), np.array([x])
-        y_next, x_next = y_[-1] + step_y, x_[-1] + step_x
-        if np.isnan(y_next) or np.isnan(x_next):
-            print(y_, y_next, step_y, x_, x_next, step_x, angle)
-        while (
-                    np.round(y_next).astype(int) < bathymetry.shape[0]
-                    and np.round(x_next).astype(int) < bathymetry.shape[1]
-                    and not np.isnan(
-                        bathymetry[
-                            np.round(y_next).astype(int),
-                            np.round(x_next).astype(int),
-                        ]
-                    )
-                ):
-            y_ = np.append(y_, y_next)
-            x_ = np.append(x_, x_next)
-            y_next, x_next = y_next + step_y, x_next + step_x
+
+        y_, x_ = compute_linepoints(
+            bathymetry,
+            y,
+            step_y,
+            x,
+            step_x,
+        )
+        y_, x_ = compute_linepoints(
+            bathymetry,
+            y_[::-1],
+            -step_y,
+            x_[::-1],
+            -step_x,
+        )
 
         y_, x_ = np.round(y_).astype(int), np.round(x_).astype(int)
 
@@ -120,6 +118,26 @@ def compute_sections(bathymetry, closest_shore):
         remaining[y, x] = False
 
     return sections
+
+
+def compute_linepoints(bathymetry, start_y, step_y, start_x, step_x):
+    y_, x_ = np.array(start_y), np.array(start_x)
+    y_next, x_next = y_[-1] + step_y, x_[-1] + step_x
+    while (
+                np.round(y_next).astype(int) < bathymetry.shape[0]
+                and np.round(x_next).astype(int) < bathymetry.shape[1]
+                and not np.isnan(
+                    bathymetry[
+                        np.round(y_next).astype(int),
+                        np.round(x_next).astype(int),
+                    ]
+                )
+            ):
+        y_ = np.append(y_, y_next)
+        x_ = np.append(x_, x_next)
+        y_next, x_next = y_next + step_y, x_next + step_x
+
+    return y_, x_
 
 
 if __name__ == '__main__':
