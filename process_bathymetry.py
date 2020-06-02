@@ -58,7 +58,7 @@ def find_closest_shore(bathymetry):
     return closest_shore, distance_to_closest_shore
 
 
-def compute_sections(bathymetry, closest_shore):
+def compute_sections(bathymetry, picks):
     mask = remaining = ~np.isnan(bathymetry)
     sections = np.zeros_like(bathymetry)
     sections[~mask] = np.nan
@@ -76,17 +76,9 @@ def compute_sections(bathymetry, closest_shore):
         coords_remaining = coords[remaining]
         ind = np.random.choice(coords_remaining.shape[0])
         y, x = coords_remaining[ind]
-        y_near, x_near = closest_shore[:, y, x]
-        if np.sqrt((y-y_near)**2 + (x-x_near)**2) < 3:
-            remaining[y, x] = False
-            continue
 
-        if abs(x-x_near) > 1e-8:
-            angle = np.arctan((y-y_near)/(x-x_near))
-        else:
-            angle = np.arctan((y-y_near)/1e-8)
-        if (x-x_near) < 0:
-            angle += np.pi
+        angle = get_angle(picks, y, x)
+        angle += np.pi
         step_y, step_x = .5 * np.sin(angle), .5 * np.cos(angle)
 
         y_, x_ = compute_linepoints(
@@ -148,21 +140,47 @@ def compute_linepoints(bathymetry, start_y, step_y, start_x, step_x):
     return y_, x_
 
 
+def get_angle(picks, y, x):
+    y_picks, x_picks = picks.T
+    distances = np.sqrt((x_picks-x)**2 + (y_picks-y)**2)
+    closest = np.argmin(distances)
+    picks = np.concatenate([[picks[0]], picks, [picks[-1]]], axis=0)
+    before, closest, after = picks[[closest, closest+1, closest+2]]
+    if (closest[1]-before[1]) > 1e-8:
+        angle_before = np.arctan((closest[0]-before[0])/(closest[1]-before[1]))
+    else:
+        angle_before = np.arctan((closest[0]-before[0])/1e-8)
+    if (closest[1]-before[1]) < 0:
+        angle_before += np.pi
+    if (after[1]-closest[1]) > 1e-8:
+        angle_after = np.arctan((after[0]-closest[0])/(after[1]-closest[1]))
+    else:
+        angle_after = np.arctan((after[0]-closest[0])/1e-8)
+    if (after[1]-closest[1]) < 0:
+        angle_after += np.pi
+
+    return np.mean([angle_before, angle_after])
+
+
 if __name__ == '__main__':
     for file_path in listdir(DATA_PATH):
-        if "bathymetry" in file_path:
+        if "bathymetry" in file_path and file_path[-3:] == 'tif':
             file_path = join(DATA_PATH, file_path)
             bathymetry, meta_dict = load_bathymetry(file_path)
             if "D" in file_path:
                 bathymetry = bathymetry[::4, ::4]
             else:
                 bathymetry = bathymetry[::2, ::2]
-            closest_shore, distance_to_closest_shore = find_closest_shore(
-                bathymetry,
-            )
-            plt.imshow(distance_to_closest_shore)
-            plt.show()
 
-            sections = compute_sections(bathymetry, closest_shore)
+            picks = np.loadtxt(file_path + '.csv', skiprows=1, delimiter=',')
+            picks = picks[:, :0:-1]  # (_, x, y) to (i, j)
+            if "D" in file_path:
+                picks = picks / 4
+            else:
+                picks = picks / 2
+            plt.imshow(bathymetry)
+            plt.scatter(picks[:, 1], picks[:, 0], c='r', s=3)
+            plt.show()
+            sections = compute_sections(bathymetry, picks)
             plt.imshow(sections)
             plt.show()
