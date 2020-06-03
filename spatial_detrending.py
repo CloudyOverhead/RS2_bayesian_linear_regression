@@ -36,7 +36,7 @@ def read_data(site, normalize=True):
         d.columns = ["long", "lat", "ice", "snow"]
         if normalize:
             for var in ["ice", "snow"]:
-                d[var] = (d[var]-d[var].mean()) / d[var].std()
+                d.loc[:, var] = (d[var]-d[var].mean()) / d[var].std()
         data[i] = d
 
     data = pd.concat(data)
