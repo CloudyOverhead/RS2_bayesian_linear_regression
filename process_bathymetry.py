@@ -5,26 +5,17 @@ from matplotlib import pyplot as plt
 import numpy as np
 from PIL import Image
 from PIL.TiffTags import TAGS
+import rasterio
 
 DATA_PATH = "data"
+FIGURE_PATH = "figures"
 
 
 def load_bathymetry(file_path):
-    with Image.open(file_path) as img:
-        bathymetry = np.array(img)
-        meta_dict = {
-            TAGS[key]: img.tag[key]
-            for key in img.tag.keys()
-        }
-
-    # bathymetry[bathymetry < -1e+37] = np.nan
+    dataset = rasterio.open(file_path)
+    bathymetry = dataset.read(1)
     bathymetry[bathymetry < 0] = np.nan
-    # for key in meta_dict.keys():
-    #     print(key)
-    #     print(meta_dict[key])
-    # plt.imshow(bathymetry)
-    # plt.show()
-    return bathymetry, meta_dict
+    return bathymetry, dataset.transform
 
 
 def find_closest_shore(bathymetry):
@@ -40,13 +31,9 @@ def find_closest_shore(bathymetry):
     x_, y_ = x[mask], y[mask]
     x, y = x[~mask], y[~mask]
 
-    # x, y, x_, y_ = x[:, None], y[:, None], x_[None, :], y_[None, :]
     distances = np.full_like(x, np.inf, dtype=np.float32)
     closest_shore_flat = np.empty([2, x.size])
-    print(f"Non NaN points: {x.size}")
     for i, (x_temp, y_temp) in enumerate(zip(x_, y_)):
-        if i % 10000 == 0:
-            print(f"Iteration {i} on {x_.size}")
         temp_distances = np.sqrt((x_temp-x)**2 + (y_temp-y)**2)
         mask = temp_distances < distances
         distances = np.where(mask, temp_distances, distances)
@@ -75,7 +62,7 @@ def compute_sections(bathymetry, picks):
         y, x = coords_remaining[ind]
 
         angle = get_angle(picks, y, x)
-        angle += np.pi
+        angle += np.pi / 2
         step_y, step_x = .5 * np.sin(angle), .5 * np.cos(angle)
 
         y_, x_ = compute_linepoints(
@@ -118,6 +105,8 @@ def compute_linepoints(bathymetry, start_y, step_y, start_x, step_x):
     while (
                 np.round(y_next).astype(int) < bathymetry.shape[0]
                 and np.round(x_next).astype(int) < bathymetry.shape[1]
+                and np.round(y_next).astype(int) >= 0
+                and np.round(x_next).astype(int) >= 0
                 and not np.isnan(
                     bathymetry[
                         np.round(y_next).astype(int),
@@ -151,28 +140,61 @@ def get_angle(picks, y, x):
     if (after[1]-closest[1]) < 0:
         angle_after += np.pi
 
+    if angle_after > angle_before + np.pi/2:
+        angle_before += np.pi
+    elif angle_before > angle_after + np.pi/2:
+        angle_after += np.pi
+
     return np.mean([angle_before, angle_after])
 
 
 if __name__ == '__main__':
     for file_path in listdir(DATA_PATH):
         if "bathymetry" in file_path and file_path[-3:] == 'tif':
+            if "K" in file_path:
+                site = "K"
+            elif "D" in file_path:
+                site = "D"
+            elif "S" in file_path:
+                site = "S"
+
             file_path = join(DATA_PATH, file_path)
-            bathymetry, meta_dict = load_bathymetry(file_path)
-            if "D" in file_path:
+            bathymetry, _ = load_bathymetry(file_path)
+            if site == "D":
+                CLIP_Y = 60
                 bathymetry = bathymetry[::4, ::4]
+                bathymetry = bathymetry[CLIP_Y:]
             else:
                 bathymetry = bathymetry[::2, ::2]
+
+            shore, distance_to_shore = find_closest_shore(bathymetry)
+            np.save(
+                join(DATA_PATH, f"{site}_distance_to_shore"),
+                distance_to_shore,
+            )
+            np.save(
+                join(DATA_PATH, f"{site}_shore"),
+                shore,
+            )
+            plt.imshow(distance_to_shore)
+            plt.savefig(join(FIGURE_PATH, f"{site}_distance_to_shore"))
+            plt.show()
 
             picks = np.loadtxt(file_path + '.csv', skiprows=1, delimiter=',')
             picks = picks[:, :0:-1]  # (_, x, y) to (i, j)
             if "D" in file_path:
                 picks = picks / 4
+                picks[:, 0] -= CLIP_Y
+                picks = picks[:-3]
             else:
                 picks = picks / 2
             plt.imshow(bathymetry)
             plt.scatter(picks[:, 1], picks[:, 0], c='r', s=3)
+            plt.savefig(join(FIGURE_PATH, f"{site}_picks"))
             plt.show()
             sections = compute_sections(bathymetry, picks)
-            plt.imshow(sections)
+            velocity = 1 / sections
+            np.save(join(DATA_PATH, f"{site}_velocity"), velocity)
+            plt.imshow(np.log(velocity))
+            plt.savefig(join(FIGURE_PATH, f"{site}_velocity"))
             plt.show()
