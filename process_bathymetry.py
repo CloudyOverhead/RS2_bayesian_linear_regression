@@ -149,52 +149,45 @@ def get_angle(picks, y, x):
 
 
 if __name__ == '__main__':
-    for file_path in listdir(DATA_PATH):
-        if "bathymetry" in file_path and file_path[-3:] == 'tif':
-            if "K" in file_path:
-                site = "K"
-            elif "D" in file_path:
-                site = "D"
-            elif "S" in file_path:
-                site = "S"
+    for site in ["K", "D", "S"]:
+        file_path = f"{site}_bathymetry_UTM_18N.tif"
+        file_path = join(DATA_PATH, file_path)
+        bathymetry, _ = load_bathymetry(file_path)
+        if site == "D":
+            CLIP_Y = 60
+            bathymetry = bathymetry[::4, ::4]
+            bathymetry = bathymetry[CLIP_Y:]
+        else:
+            bathymetry = bathymetry[::2, ::2]
 
-            file_path = join(DATA_PATH, file_path)
-            bathymetry, _ = load_bathymetry(file_path)
-            if site == "D":
-                CLIP_Y = 60
-                bathymetry = bathymetry[::4, ::4]
-                bathymetry = bathymetry[CLIP_Y:]
-            else:
-                bathymetry = bathymetry[::2, ::2]
+        shore, distance_to_shore = find_closest_shore(bathymetry)
+        np.save(
+            join(DATA_PATH, f"{site}_distance_to_shore"),
+            distance_to_shore,
+        )
+        np.save(
+            join(DATA_PATH, f"{site}_shore"),
+            shore,
+        )
+        plt.imshow(distance_to_shore)
+        plt.savefig(join(FIGURE_PATH, f"{site}_distance_to_shore"))
+        plt.show()
 
-            shore, distance_to_shore = find_closest_shore(bathymetry)
-            np.save(
-                join(DATA_PATH, f"{site}_distance_to_shore"),
-                distance_to_shore,
-            )
-            np.save(
-                join(DATA_PATH, f"{site}_shore"),
-                shore,
-            )
-            plt.imshow(distance_to_shore)
-            plt.savefig(join(FIGURE_PATH, f"{site}_distance_to_shore"))
-            plt.show()
-
-            picks = np.loadtxt(file_path + '.csv', skiprows=1, delimiter=',')
-            picks = picks[:, :0:-1]  # (_, x, y) to (i, j)
-            if "D" in file_path:
-                picks = picks / 4
-                picks[:, 0] -= CLIP_Y
-                picks = picks[:-3]
-            else:
-                picks = picks / 2
-            plt.imshow(bathymetry)
-            plt.scatter(picks[:, 1], picks[:, 0], c='r', s=3)
-            plt.savefig(join(FIGURE_PATH, f"{site}_picks"))
-            plt.show()
-            sections = compute_sections(bathymetry, picks)
-            velocity = 1 / sections
-            np.save(join(DATA_PATH, f"{site}_velocity"), velocity)
-            plt.imshow(np.log(velocity))
-            plt.savefig(join(FIGURE_PATH, f"{site}_velocity"))
-            plt.show()
+        picks = np.loadtxt(file_path + '.csv', skiprows=1, delimiter=',')
+        picks = picks[:, :0:-1]  # (_, x, y) to (i, j)
+        if "D" in file_path:
+            picks = picks / 4
+            picks[:, 0] -= CLIP_Y
+            picks = picks[:-3]
+        else:
+            picks = picks / 2
+        plt.imshow(bathymetry)
+        plt.scatter(picks[:, 1], picks[:, 0], c='r', s=3)
+        plt.savefig(join(FIGURE_PATH, f"{site}_picks"))
+        plt.show()
+        sections = compute_sections(bathymetry, picks)
+        velocity = 1 / sections
+        np.save(join(DATA_PATH, f"{site}_velocity"), velocity)
+        plt.imshow(np.log(velocity))
+        plt.savefig(join(FIGURE_PATH, f"{site}_velocity"))
+        plt.show()
