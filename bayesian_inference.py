@@ -11,6 +11,41 @@ DATA_PATH = "data"
 FIGURE_PATH = "figures"
 
 
+def correct_transform(site, transform, ind):
+    transform = np.array(
+        [
+            [transform.a, transform.b, transform.c],
+            [transform.d, transform.e, transform.f],
+            [0, 0, 1],
+        ]
+    )
+
+    unknown_contraction = np.diag([.5, .5, 1])
+    unknown_translation = np.array(
+        [
+            [1, 0, ind[1, 0]/4],
+            [0, 1, ind[1, 1]/4],
+            [0, 0, 1],
+        ]
+    )
+    if site == "D":
+        clip = np.array(
+            [
+                [1, 0, 0],
+                [0, 1, 60],
+                [0, 0, 1],
+            ]
+        )
+        stretch = np.diag([4, 4, 1])
+        transform = transform @ stretch @ clip
+    else:
+        stretch = np.diag([2, 2, 1])
+        transform = transform @ stretch
+    transform = transform @ unknown_translation @ unknown_contraction
+
+    return transform
+
+
 if __name__ == "__main__":
     files = [
         file for file in listdir(DATA_PATH)
@@ -24,28 +59,15 @@ if __name__ == "__main__":
         x_data, y_data, ice, snow = [
             col for _, col in data.iteritems()
         ]
-        transform = np.array(
-            [
-                [transform.a, transform.b, transform.c],
-                [transform.d, transform.e, transform.f],
-                [0, 0, 1],
-            ]
-        )
+
         ind = np.array(
             [
                 [0, 0, 1],
                 [velocity.shape[1]-1, velocity.shape[0]-1, 1],
             ]
         )
-        ind[:, :-1] //= 2
-        ind[:, :-1] += ind[1, :-1] // 2
-        if site == "D":
-            ind[:, 1] += 60
-            ind[:, :-1] *= 4
-        else:
-            ind[:, :-1] *= 2
-
-        x_map, y_map, _ = mat = transform @ ind.T
+        transform = correct_transform(site, transform, ind)
+        x_map, y_map, _ = transform @ ind.T
 
         dx = (x_map[1]-x_map[0])/2.
         dy = (y_map[1]-y_map[0])/2.
