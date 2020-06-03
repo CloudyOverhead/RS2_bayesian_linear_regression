@@ -77,43 +77,42 @@ def remove_trend(x, y, values, d_neighbors=.1):
 #
 #     return values
 
+if __name__ == "__main__":
+    fig, axes = plt.subplots(figsize=(15, 10), nrows=2, ncols=3)
+    for i, var in enumerate(["snow", "ice"]):
+        for j, place in enumerate(["S", "D", "K"]):
+            d = read_data(place)
+            d[var] = remove_trend(d["long"], d["lat"], d[var])
+            plt.sca(axes[i, j])
+            plt.scatter(
+                d["long"],
+                d["lat"],
+                c=d[var],
+                cmap="seismic",
+                vmin=-1,
+                vmax=1,
+            )
 
-fig, axes = plt.subplots(figsize=(15, 10), nrows=2, ncols=3)
-for i, var in enumerate(["snow", "ice"]):
-    for j, place in enumerate(["S", "D", "K"]):
+    for ax in axes.flatten():
+        ax.set_xticks([])
+        ax.set_yticks([])
+    axes[0, 0].set_ylabel("Snow")
+    axes[1, 0].set_ylabel("Ice")
+    axes[1, 0].set_xlabel("S")
+    axes[1, 1].set_xlabel("D")
+    axes[1, 2].set_xlabel("K")
+    plt.show()
+
+    fig, axes = plt.subplots(figsize=(15, 5), nrows=1, ncols=3)
+    for i, place in enumerate(["S", "D", "K"]):
         d = read_data(place)
         d[var] = remove_trend(d["long"], d["lat"], d[var])
-        plt.sca(axes[i, j])
-        plt.scatter(
-            d["long"],
-            d["lat"],
-            c=d[var],
-            cmap="seismic",
-            vmin=-1,
-            vmax=1,
-        )
+        plt.sca(axes[i])
+        plt.scatter(d["snow"], d["ice"], s=4, c='k')
 
-for ax in axes.flatten():
-    ax.set_xticks([])
-    ax.set_yticks([])
-axes[0, 0].set_ylabel("Snow")
-axes[1, 0].set_ylabel("Ice")
-axes[1, 0].set_xlabel("S")
-axes[1, 1].set_xlabel("D")
-axes[1, 2].set_xlabel("K")
-plt.show()
-
-
-fig, axes = plt.subplots(figsize=(15, 5), nrows=1, ncols=3)
-for i, place in enumerate(["S", "D", "K"]):
-    d = read_data(place)
-    d[var] = remove_trend(d["long"], d["lat"], d[var])
-    plt.sca(axes[i])
-    plt.scatter(d["snow"], d["ice"], s=4, c='k')
-
-for ax in axes.flatten():
-    ax.set_xticks([])
-    ax.set_yticks([])
-axes[0].set_ylabel("Ice")
-axes[0].set_xlabel("Snow")
-plt.show()
+    for ax in axes.flatten():
+        ax.set_xticks([])
+        ax.set_yticks([])
+    axes[0].set_ylabel("Ice")
+    axes[0].set_xlabel("Snow")
+    plt.show()
