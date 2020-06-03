@@ -6,6 +6,43 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from scipy.optimize import lsq_linear
 
+DATA_DIR = "data"
+
+
+def read_data(site, normalize=True):
+    files = listdir(DATA_DIR)
+    files = [
+        file for file in files
+        if '.csv' in file
+        and 'transect' not in file
+        and site in file
+        and "bathymetry" not in file
+    ]
+
+    data = [
+        pd.read_csv(
+            join(DATA_DIR, file),
+            comment='#',
+        )
+        for file in files
+    ]
+
+    for i, d in enumerate(data):
+        ice = [s for s in d.columns if "ice" in s.lower()]
+        snow = [s for s in d.columns if "snow" in s.lower()]
+        assert len(ice) == 1 and len(snow) == 1
+        ice, snow = ice[0], snow[0]
+        d = d[["long", "lat", ice, snow]]
+        d.columns = ["long", "lat", "ice", "snow"]
+        if normalize:
+            for var in ["ice", "snow"]:
+                d[var] = (d[var]-d[var].mean()) / d[var].std()
+        data[i] = d
+
+    data = pd.concat(data)
+
+    return data
+
 
 def remove_trend(x, y, values, d_neighbors=.1):
     x, y, values = np.array(x), np.array(y), np.array(values)
@@ -41,39 +78,12 @@ def remove_trend(x, y, values, d_neighbors=.1):
 #     return values
 
 
-DATA_DIR = "data"
-files = listdir(DATA_DIR)
-files = [file for file in files if '.csv' in file and 'transect' not in file]
-
-data = [
-    pd.read_csv(
-        join(DATA_DIR, file),
-        comment='#',
-    )
-    for file in files
-]
-for i, d in enumerate(data):
-    ice = [s for s in d.columns if "ice" in s.lower()]
-    snow = [s for s in d.columns if "snow" in s.lower()]
-    assert len(ice) == 1 and len(snow) == 1
-    ice, snow = ice[0], snow[0]
-    d = d[["long", "lat", ice, snow]]
-    d.columns = ["long", "lat", "ice", "snow"]
-    data[i] = d
-
-
 fig, axes = plt.subplots(figsize=(15, 10), nrows=2, ncols=3)
 for i, var in enumerate(["snow", "ice"]):
     for j, place in enumerate(["S", "D", "K"]):
-        place_data = pd.DataFrame([], columns=["long", "lat", "ice", "snow"])
-        plt.sca(axes[i, j])
-        for k, file in enumerate(files):
-            if place in file:
-                d = data[k]
-                d[var] = (d[var]-d[var].mean()) / d[var].std()
-                place_data = pd.concat([place_data, d])
-        d = place_data
+        d = read_data(place)
         d[var] = remove_trend(d["long"], d["lat"], d[var])
+        plt.sca(axes[i, j])
         plt.scatter(
             d["long"],
             d["lat"],
@@ -96,15 +106,9 @@ plt.show()
 
 fig, axes = plt.subplots(figsize=(15, 5), nrows=1, ncols=3)
 for i, place in enumerate(["S", "D", "K"]):
-    place_data = pd.DataFrame([], columns=["long", "lat", "ice", "snow"])
-    plt.sca(axes[i])
-    for j, file in enumerate(files):
-        if place in file:
-            d = data[j]
-            d[var] = (d[var]-d[var].mean()) / d[var].std()
-            place_data = pd.concat([place_data, d])
-    d = place_data
+    d = read_data(place)
     d[var] = remove_trend(d["long"], d["lat"], d[var])
+    plt.sca(axes[i])
     plt.scatter(d["snow"], d["ice"], s=4, c='k')
 
 for ax in axes.flatten():
