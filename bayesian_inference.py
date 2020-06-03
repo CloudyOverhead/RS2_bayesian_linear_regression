@@ -37,6 +37,8 @@ if __name__ == "__main__":
                 [velocity.shape[1]-1, velocity.shape[0]-1, 1],
             ]
         )
+        ind[:, :-1] //= 2
+        ind[:, :-1] += ind[1, :-1] // 2
         if site == "D":
             ind[:, 1] += 60
             ind[:, :-1] *= 4
@@ -48,16 +50,20 @@ if __name__ == "__main__":
         dx = (x_map[1]-x_map[0])/2.
         dy = (y_map[1]-y_map[0])/2.
         extent = [x_map[0]-dx, x_map[-1]+dx, y_map[0]-dy, y_map[-1]+dy]
+        plt.figure(figsize=(8, 8))
         plt.imshow(np.log(velocity), extent=extent, origin='lower')
         for var, cmap in zip([ice, snow], ["RdBu", "PuOr"]):
             plt.scatter(
                 x_data,
                 y_data,
                 c=var,
-                s=2,
+                s=20,
                 cmap=cmap,
                 vmin=-1,
                 vmax=1,
             )
         plt.gca().invert_yaxis()
+        plt.xlim([x_data.min()-1000, x_data.max()+1000])
+        plt.ylim([y_data.min()-1000, y_data.max()+1000])
+        plt.savefig(join(FIGURE_PATH, f"{site}_loc"))
         plt.show()
