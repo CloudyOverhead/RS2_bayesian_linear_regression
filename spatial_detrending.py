@@ -17,6 +17,7 @@ def read_data(site, normalize=True):
         and 'transect' not in file
         and site in file
         and "bathymetry" not in file
+        and "distance" not in file
     ]
 
     data = [
