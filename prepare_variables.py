@@ -134,7 +134,7 @@ def get_variables(plot=False, select_angle=0):
             plt.savefig(join(FIGURE_PATH, f"{site}_loc"))
             plt.show()
 
-    return data, product
+        yield site, data, product
 
 
 if __name__ == "__main__":
