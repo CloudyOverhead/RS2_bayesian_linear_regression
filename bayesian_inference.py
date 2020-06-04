@@ -43,6 +43,37 @@ def correct_transform(site, transform, ind):
     return transform
 
 
+def compute_wind_shore_product(site, center, y, x):
+    interp_center = np.empty([0, 2], dtype=float)
+    for (x_start, y_start), (x_end, y_end) in zip(center[:-1], center[1:]):
+        new_points = np.array(
+            [
+                np.linspace(x_start, x_end, 6)[:-1],
+                np.linspace(y_start, y_end, 6)[:-1],
+            ]
+        )
+        interp_center = np.append(interp_center, new_points.T, axis=0)
+
+    y_, x_ = y[:, None], x[:, None]
+    x_center, y_center = interp_center.T
+    plt.plot(x_center, y_center, c='r')
+    y_center, x_center = y_center[None, :], x_center[None, :]
+    distance_to_center = np.sqrt((y_-y_center)**2 + (x_-x_center)**2)
+    args = np.argmin(distance_to_center, axis=1)
+
+    x_center, y_center = interp_center[args].T
+    distance = np.sqrt((y-y_center)**2 + (x-x_center)**2)
+    angle = np.arctan((y_center-y) / (x-x_center))  # y axis is reversed.
+    assert ~np.isnan(angle).any()
+    angle[(x-x_center) < 0] += np.pi
+
+    distance, angle = distance[:, None], angle[:, None]
+    angle_wind = ANGLES[None, :]
+    product = distance * np.cos(angle-angle_wind)
+
+    return product
+
+
 if __name__ == "__main__":
     files = [
         file for file in listdir(DATA_PATH)
@@ -64,22 +95,57 @@ if __name__ == "__main__":
             ]
         )
         transform = correct_transform(site, transform, ind)
-        x_map, y_map, _ = transform @ ind.T
+        # x_map, y_map, _ = transform @ ind.T
+        x_data, y_data, _ = np.linalg.inv(transform) @ np.array(
+            [x_data, y_data, np.ones_like(x_data)]
+        )
 
-        plt.figure(figsize=(8, 8))
-        plt.imshow(np.log(velocity), extent=extent, origin='lower')
-        for var, cmap in zip([ice, snow], ["RdBu", "PuOr"]):
-            plt.scatter(
-                x_data,
-                y_data,
-                c=var,
-                s=20,
-                cmap=cmap,
-                vmin=-1,
-                vmax=1,
-            )
+        i, j = np.round(y_data).astype(int), np.round(x_data).astype(int)
+        data["velocity"] = velocity[i, j]
+        data.loc[np.isnan(data["velocity"]), "velocity"] = 0
+
+        center = np.loadtxt(
+            join(DATA_PATH, f"{site}_distance_to_shore_raw.csv"),
+            skiprows=1,
+            delimiter=',',
+            usecols=[1, 2],
+        )
+        product = compute_wind_shore_product(site, center, y_data, x_data)
+
+        plt.gcf().set_size_inches(8, 8)
+        # extent = [x_map[0], x_map[-1], y_map[0], y_map[-1]]
+        # plt.imshow(np.log(velocity), extent=extent, origin='lower')
+        plt.imshow(np.log(velocity))
+        SELECT_ANGLE = 12
+        plt.arrow(
+            x_data.min(),
+            y_data.min(),
+            5 * np.cos(-ANGLES[SELECT_ANGLE]),  # y axis is reversed.
+            5 * np.sin(-ANGLES[SELECT_ANGLE]),  # y axis is reversed.
+            color='r',
+            width=.5,
+        )
+        plt.scatter(
+            x_data,
+            y_data,
+            c=product[:, SELECT_ANGLE],
+            s=20,
+            cmap="seismic",
+        )
+        # for var, cmap in zip([ice, snow], ["RdBu", "PuOr"]):
+        #     plt.scatter(
+        #         x_data,
+        #         y_data,
+        #         c=var,
+        #         s=20,
+        #         cmap=cmap,
+        #         vmin=-1,
+        #         vmax=1,
+        #     )
+        # plt.xlim([x_data.min()-1000, x_data.max()+1000])
+        # plt.ylim([y_data.min()-1000, y_data.max()+1000])
+        plt.xlim([x_data.min()-10, x_data.max()+10])
+        plt.ylim([y_data.min()-10, y_data.max()+10])
         plt.gca().invert_yaxis()
-        plt.xlim([x_data.min()-1000, x_data.max()+1000])
-        plt.ylim([y_data.min()-1000, y_data.max()+1000])
         plt.savefig(join(FIGURE_PATH, f"{site}_loc"))
         plt.show()
