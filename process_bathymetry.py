@@ -172,6 +172,12 @@ if __name__ == '__main__':
         plt.imshow(distance_to_shore)
         plt.savefig(join(FIGURE_PATH, f"{site}_distance_to_shore"))
         plt.show()
+        plt.imsave(
+            join(FIGURE_PATH, f"{site}_distance_to_shore_raw.png"),
+            distance_to_shore,
+            vmin=np.nanmin(distance_to_shore),
+            vmax=np.nanmax(distance_to_shore),
+        )
 
         picks = np.loadtxt(file_path + '.csv', skiprows=1, delimiter=',')
         picks = picks[:, :0:-1]  # (_, x, y) to (i, j)
