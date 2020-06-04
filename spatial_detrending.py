@@ -4,7 +4,7 @@ from os.path import join
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
-from scipy.optimize import lsq_linear
+# from scipy.optimize import lsq_linear
 
 DATA_DIR = "data"
 
@@ -14,7 +14,8 @@ def read_data(site, normalize=True):
     files = [
         file for file in files
         if '.csv' in file
-        and 'transect' not in file
+        and 'noship' not in file
+        and 'both' not in file
         and site in file
         and "bathymetry" not in file
         and "distance" not in file
