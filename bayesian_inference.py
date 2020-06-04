@@ -26,14 +26,6 @@ def correct_transform(site, transform, ind):
         ]
     )
 
-    unknown_contraction = np.diag([.5, .5, 1])
-    unknown_translation = np.array(
-        [
-            [1, 0, ind[1, 0]/4],
-            [0, 1, ind[1, 1]/4],
-            [0, 0, 1],
-        ]
-    )
     if site == "D":
         clip = np.array(
             [
@@ -47,7 +39,6 @@ def correct_transform(site, transform, ind):
     else:
         stretch = np.diag([2, 2, 1])
         transform = transform @ stretch
-    transform = transform @ unknown_translation @ unknown_contraction
 
     return transform
 
@@ -75,9 +66,6 @@ if __name__ == "__main__":
         transform = correct_transform(site, transform, ind)
         x_map, y_map, _ = transform @ ind.T
 
-        dx = (x_map[1]-x_map[0])/2.
-        dy = (y_map[1]-y_map[0])/2.
-        extent = [x_map[0]-dx, x_map[-1]+dx, y_map[0]-dy, y_map[-1]+dy]
         plt.figure(figsize=(8, 8))
         plt.imshow(np.log(velocity), extent=extent, origin='lower')
         for var, cmap in zip([ice, snow], ["RdBu", "PuOr"]):
