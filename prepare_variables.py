@@ -56,7 +56,6 @@ def compute_wind_shore_product(site, center, y, x):
 
     y_, x_ = y[:, None], x[:, None]
     x_center, y_center = interp_center.T
-    plt.plot(x_center, y_center, c='r')
     y_center, x_center = y_center[None, :], x_center[None, :]
     distance_to_center = np.sqrt((y_-y_center)**2 + (x_-x_center)**2)
     args = np.argmin(distance_to_center, axis=1)
@@ -74,7 +73,7 @@ def compute_wind_shore_product(site, center, y, x):
     return product
 
 
-if __name__ == "__main__":
+def get_variables(plot=False, select_angle=0):
     files = [
         file for file in listdir(DATA_PATH)
         if "bathymetry" in file and file[-3:] == 'tif'
@@ -95,7 +94,6 @@ if __name__ == "__main__":
             ]
         )
         transform = correct_transform(site, transform, ind)
-        # x_map, y_map, _ = transform @ ind.T
         x_data, y_data, _ = np.linalg.inv(transform) @ np.array(
             [x_data, y_data, np.ones_like(x_data)]
         )
@@ -112,40 +110,32 @@ if __name__ == "__main__":
         )
         product = compute_wind_shore_product(site, center, y_data, x_data)
 
-        plt.gcf().set_size_inches(8, 8)
-        # extent = [x_map[0], x_map[-1], y_map[0], y_map[-1]]
-        # plt.imshow(np.log(velocity), extent=extent, origin='lower')
-        plt.imshow(np.log(velocity))
-        SELECT_ANGLE = 12
-        plt.arrow(
-            x_data.min(),
-            y_data.min(),
-            5 * np.cos(-ANGLES[SELECT_ANGLE]),  # y axis is reversed.
-            5 * np.sin(-ANGLES[SELECT_ANGLE]),  # y axis is reversed.
-            color='r',
-            width=.5,
-        )
-        plt.scatter(
-            x_data,
-            y_data,
-            c=product[:, SELECT_ANGLE],
-            s=20,
-            cmap="seismic",
-        )
-        # for var, cmap in zip([ice, snow], ["RdBu", "PuOr"]):
-        #     plt.scatter(
-        #         x_data,
-        #         y_data,
-        #         c=var,
-        #         s=20,
-        #         cmap=cmap,
-        #         vmin=-1,
-        #         vmax=1,
-        #     )
-        # plt.xlim([x_data.min()-1000, x_data.max()+1000])
-        # plt.ylim([y_data.min()-1000, y_data.max()+1000])
-        plt.xlim([x_data.min()-10, x_data.max()+10])
-        plt.ylim([y_data.min()-10, y_data.max()+10])
-        plt.gca().invert_yaxis()
-        plt.savefig(join(FIGURE_PATH, f"{site}_loc"))
-        plt.show()
+        if plot:
+            plt.gcf().set_size_inches(8, 8)
+            plt.imshow(np.log(velocity))
+            plt.arrow(
+                x_data.min(),
+                y_data.min(),
+                5 * np.cos(-ANGLES[select_angle]),  # y axis is reversed.
+                5 * np.sin(-ANGLES[select_angle]),  # y axis is reversed.
+                color='r',
+                width=.5,
+            )
+            plt.scatter(
+                x_data,
+                y_data,
+                c=product[:, select_angle],
+                s=20,
+                cmap="seismic",
+            )
+            plt.xlim([x_data.min()-10, x_data.max()+10])
+            plt.ylim([y_data.min()-10, y_data.max()+10])
+            plt.gca().invert_yaxis()
+            plt.savefig(join(FIGURE_PATH, f"{site}_loc"))
+            plt.show()
+
+    return data, product
+
+
+if __name__ == "__main__":
+    get_variables(plot=True)
