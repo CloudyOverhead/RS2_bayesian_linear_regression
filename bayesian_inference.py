@@ -6,9 +6,15 @@ from matplotlib import pyplot as plt
 
 from spatial_detrending import read_data
 from process_bathymetry import load_bathymetry
+from wind_tables import ANGLES, K_WIND, D_WIND, S_WIND
 
 DATA_PATH = "data"
 FIGURE_PATH = "figures"
+SITE_WIND = {
+    "K": K_WIND,
+    "D": D_WIND,
+    "S": S_WIND,
+}
 
 
 def correct_transform(site, transform, ind):
