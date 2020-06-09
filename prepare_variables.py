@@ -145,4 +145,5 @@ def get_variables(plot=False, select_angle=0):
 
 
 if __name__ == "__main__":
-    get_variables(plot=True)
+    for _ in get_variables(plot=True, select_angle=3):
+        pass
