@@ -78,7 +78,7 @@ def get_variables(plot=False, select_angle=0):
         file for file in listdir(DATA_PATH)
         if "bathymetry" in file and file[-3:] == 'tif'
     ]
-    for site in ["K", "D", "S"]:
+    for site in ["S", "D", "K"]:
         file_path = [file for file in files if site in file][0]
         _, transform = load_bathymetry(join(DATA_PATH, file_path))
         velocity = np.load(join(DATA_PATH, f"{site}_velocity.npy"))
