@@ -128,7 +128,7 @@ def get_variables(plot=False, select_angle=0):
         _, transform = load_bathymetry(join(DATA_PATH, file_path))
         velocity = np.load(join(DATA_PATH, f"{site}_velocity.npy"))
         data = read_data(site)
-        x_data, y_data, ice, snow = [
+        x_data, y_data, ice, snow, vv = [
             col for _, col in data.iteritems()
         ]
 
