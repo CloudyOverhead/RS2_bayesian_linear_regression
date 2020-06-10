@@ -14,6 +14,7 @@ ANGLE_SITE = {
     'D': 2,
     'K': 14,
 }
+YEAR = "2018"
 FIGURE_PATH = "figures"
 
 
@@ -29,7 +30,7 @@ def pairplots(site, data, products):
     sns.pairplot(
         pd.DataFrame(data, columns=["ice", "snow", "wind", "vv"])
     )
-    plt.show()
+    # plt.show()
 
 
 def get_posterior(vars, xs, y):
@@ -73,10 +74,10 @@ def get_stats(posterior, vars, null_dims, print_=True, problem=None):
 
     if print_:
         print(" "*3, f"{problem}:")
-        print(" "*7, "Best fit mean:", vars_max)
-        print(" "*7, "Best fit std:", std_mar)
+        print(" "*7, "Best fit mean:", ["{:.3f}".format(x) for x in vars_max])
+        print(" "*7, "Best fit std:", ["{:.3f}".format(x) for x in std_mar])
         # print(" "*7, "Rapport à l'uniforme:", prob_max / prob_uniform)
-        print(" "*7, "Rapport à l'hypothèse nulle:", prob_max / prob_null)
+        print(" "*7, "Rapport à l'hypothèse nulle:", "{:.0f}".format(prob_max / prob_null))
 
     return argmax, unravel_argmax, vars_max, probs_mar, std_mar
 
@@ -154,7 +155,7 @@ def plot_linear_dependency(problem, x, y, a, b, std, xlabel="", ylabel=""):
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.savefig(join(FIGURE_PATH, f"Results_{problem}_{site}"))
-    plt.show()
+    # plt.show()
 
 
 def plot_parameters(site, problem, vars, var_names, probs_mar):
@@ -171,15 +172,13 @@ def plot_parameters(site, problem, vars, var_names, probs_mar):
             ax.set_xscale('log')
     plt.tight_layout()
     plt.savefig(join(FIGURE_PATH, f"Parameters_{problem}_{site}"))
-    plt.show()
-
+    # plt.show()
 
 if __name__ == "__main__":
     STEPS = 16  # Remplacer par 32 pour plus de définition.
 
-    for site, data, products in get_variables():
+    for site, data, products in get_variables(year=YEAR):
         print(f"Site {site}")
-
         snow, ice, vv = data[["snow", "ice", "VV"]].values.T
         products = products[:, ANGLE_SITE[site]]
 

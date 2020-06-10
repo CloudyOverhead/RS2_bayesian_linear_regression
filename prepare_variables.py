@@ -18,7 +18,7 @@ SITE_WIND = {
 }
 
 
-def read_data(site, remove_jan=True, normalize=True):
+def read_data(site, year, remove_jan=True, normalize=True):
     files = listdir(DATA_PATH)
     files = [
         file for file in files
@@ -28,6 +28,7 @@ def read_data(site, remove_jan=True, normalize=True):
         and site in file
         and "bathymetry" not in file
         and "distance" not in file
+        and year in file
     ]
     if remove_jan:
         files = [
@@ -118,16 +119,18 @@ def compute_wind_shore_product(site, center, y, x):
     return product
 
 
-def get_variables(plot=False, select_angle=0):
+def get_variables(year=0,plot=False, select_angle=0):
     files = [
         file for file in listdir(DATA_PATH)
         if "bathymetry" in file and file[-3:] == 'tif'
     ]
     for site in ["S", "D", "K"]:
-        file_path = [file for file in files if site in file][0]
+        if (year == "2016") & (site == "S"):
+            continue
+        file_path = [file for file in files if (site in file)][0]
         _, transform = load_bathymetry(join(DATA_PATH, file_path))
         velocity = np.load(join(DATA_PATH, f"{site}_velocity.npy"))
-        data = read_data(site)
+        data = read_data(site, year)
         x_data, y_data, ice, snow, vv = [
             col for _, col in data.iteritems()
         ]
@@ -155,13 +158,13 @@ def get_variables(plot=False, select_angle=0):
         )
         product = compute_wind_shore_product(site, center, y_data, x_data)
 
-        if site != "S":
-            velocity_temp = data["velocity"]
-            velocity_mask = (
-                velocity_temp < velocity_temp.mean() + .1*velocity_temp.std()
-            )
-            data, product = data.loc[velocity_mask], product[velocity_mask]
-            x_data, y_data = x_data[velocity_mask], y_data[velocity_mask]
+        # if site != "S":
+        #     velocity_temp = data["velocity"]
+        #     velocity_mask = (
+        #         velocity_temp < velocity_temp.mean() + .1*velocity_temp.std()
+        #     )
+        #     data, product = data.loc[velocity_mask], product[velocity_mask]
+        #     x_data, y_data = x_data[velocity_mask], y_data[velocity_mask]
 
         if plot:
             plt.gcf().set_size_inches(8, 8)
