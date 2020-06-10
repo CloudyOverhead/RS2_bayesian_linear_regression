@@ -71,7 +71,7 @@ def get_stats(posterior, vars, null_dims, print_=True, problem=None):
         print(" "*7, "Best fit mean:", ["{:.3f}".format(x) for x in vars_max])
         print(" "*7, "Best fit std:", ["{:.3f}".format(x) for x in std_mar])
         # print(" "*7, "Rapport à l'uniforme:", prob_max / prob_uniform)
-        print(" "*7, "Rapport à l'hypothèse nulle:", "{:.0f}".format(prob_max / prob_null))
+        print(" "*7, "Rapport à l'hypothèse nulle:", "{:.0f}".format(prob_max / prob_null), ", ({:.0E})".format(prob_max / prob_null))
 
     return argmax, unravel_argmax, vars_max, probs_mar, std_mar
 
