@@ -66,11 +66,7 @@ def get_stats(posterior, vars, null_dims, print_=True, problem=None):
     unravel_argmax = list(np.unravel_index(argmax, posterior.shape))
     prob_max = posterior.flatten()[argmax]
     # prob_uniform = posterior.mean()
-    for dim in sorted(null_dims)[::-1]:
-        posterior = np.moveaxis(posterior, dim, -1)
-        idx_null = np.argmin(np.abs(vars[dim]))
-        prob_null = posterior[..., idx_null]
-    prob_null = prob_null.max()
+    prob_null = get_prob_null(posterior, vars, null_dims)
     vars_max = [var[unravel_argmax[i]] for i, var in enumerate(vars)]
     probs_mar = marginal_distributions(unravel_argmax, posterior)
     std_mar = [weighted_std(var, prob) for var, prob in zip(vars, probs_mar)]
@@ -83,6 +79,14 @@ def get_stats(posterior, vars, null_dims, print_=True, problem=None):
         print(" "*7, "Rapport à l'hypothèse nulle:", prob_max / prob_null)
 
     return argmax, unravel_argmax, vars_max, probs_max, std_max
+
+
+def get_prob_null(posterior, vars, null_dims):
+    for dim in sorted(null_dims)[::-1]:
+        posterior = np.moveaxis(posterior, dim, -1)
+        idx_null = np.argmin(np.abs(vars[dim]))
+        posterior = posterior[..., idx_null]
+    return posterior.max()
 
 
 def weighted_std(values, weights):
