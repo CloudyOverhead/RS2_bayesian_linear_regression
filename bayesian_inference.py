@@ -17,6 +17,21 @@ ANGLE_SITE = {
 FIGURE_PATH = "figures"
 
 
+def pairplots(site, data, products):
+    data = np.concatenate(
+        [
+            data.values[:, [2, 3]],
+            products[:, ANGLE_SITE[site], None],
+            data.values[:, 4],
+        ],
+        axis=1,
+    )
+    sns.pairplot(
+        pd.DataFrame(data, columns=["ice", "snow", "wind", "vv"])
+    )
+    plt.show()
+
+
 def get_posterior(vars, xs, y):
     *as_, std = vars
     n = len(as_) + 2
@@ -161,11 +176,6 @@ if __name__ == "__main__":
 
     for site, data, products in get_variables():
         print(f"Site {site}")
-        # data = np.concatenate([data.values[:, [2, 3]], products[:, ANGLE_SITE[site], None]], axis=1)
-        # sns.pairplot(
-        #     pd.DataFrame(data, columns=["ice", "snow", "wind"])
-        # )
-        # plt.show()
 
         snow, ice, vv = data[["snow", "ice", "VV"]].values.T
         products = products[:, ANGLE_SITE[site]]
