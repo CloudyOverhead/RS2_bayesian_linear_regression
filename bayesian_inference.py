@@ -257,7 +257,16 @@ if __name__ == "__main__":
             b=vv_0,
             std=vv_noise,
             xlabel="Snow",
-            ylabel="sigma_VV - Ice",
+            ylabel="sigma_VV - Ice dependency * Ice",
+        )
+        plot_linear_dependency(
+            "vv_to_ice",
+            ice,
+            vv-vv_snow_dep*snow,
+            a=vv_ice_dep,
+            b=vv_0,
+            std=vv_noise,
+            xlabel="Ice",
+            ylabel="sigma_VV - Snow dependency * Snow",
         )
         plot_parameters(site, "ice", vars, var_names, probs_max)
-        break
