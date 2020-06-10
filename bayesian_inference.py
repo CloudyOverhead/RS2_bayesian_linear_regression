@@ -74,11 +74,11 @@ def get_stats(posterior, vars, null_dims, print_=True, problem=None):
     if print_:
         print(" "*3, f"{problem}:")
         print(" "*7, "Best fit mean:", vars_max)
-        print(" "*7, "Best fit std:", std_max)
+        print(" "*7, "Best fit std:", std_mar)
         # print(" "*7, "Rapport à l'uniforme:", prob_max / prob_uniform)
         print(" "*7, "Rapport à l'hypothèse nulle:", prob_max / prob_null)
 
-    return argmax, unravel_argmax, vars_max, probs_max, std_max
+    return argmax, unravel_argmax, vars_max, probs_mar, std_mar
 
 
 def get_prob_null(posterior, vars, null_dims):
@@ -157,14 +157,14 @@ def plot_linear_dependency(problem, x, y, a, b, std, xlabel="", ylabel=""):
     plt.show()
 
 
-def plot_parameters(site, problem, vars, var_names, probs_max):
+def plot_parameters(site, problem, vars, var_names, probs_mar):
     fig, axes = plt.subplots(1, len(vars), sharey=True)
     axes[0].set_ylabel("Marginal probability (normalized to maximum)")
     for i, (var, name) in enumerate(zip(vars, var_names)):
         ax = axes.flatten()[i]
         width = np.diff(var)
-        probs_max_ = probs_max[i] / probs_max[i].max()
-        ax.bar(var, probs_max_, [*width, width[-1]], color=[.3, .3, .3])
+        probs_mar_ = probs_mar[i] / probs_mar[i].max()
+        ax.bar(var, probs_mar_, [*width, width[-1]], color=[.3, .3, .3])
         ax.set_xlabel(name)
         ax.set_xlim([var.min(), var.max()])
         if i == len(vars)-1:
@@ -192,7 +192,7 @@ if __name__ == "__main__":
         var_names = ["Shore-wind product", "S0", "sigma_S"]
 
         posterior = get_posterior(vars, [products, np.ones_like(snow)], snow)
-        argmax, unravel_argmax, vars_max, probs_max, std_max = get_stats(
+        argmax, unravel_argmax, vars_max, probs_mar, std_max = get_stats(
             posterior, vars, null_dims=[0], problem="Snow",
         )
 
@@ -204,7 +204,7 @@ if __name__ == "__main__":
             xlabel="Shore-wind product",
             ylabel="Snow",
         )
-        plot_parameters(site, "snow", vars, var_names, probs_max)
+        plot_parameters(site, "snow", vars, var_names, probs_mar)
 
         """Ice"""
 
@@ -215,7 +215,7 @@ if __name__ == "__main__":
         var_names = ["Snow dependency", "I0", "sigma_I"]
 
         posterior = get_posterior(vars, [snow, np.ones_like(ice)], ice)
-        argmax, unravel_argmax, vars_max, probs_max, std_max = get_stats(
+        argmax, unravel_argmax, vars_max, probs_mar, std_max = get_stats(
             posterior, vars, null_dims=[0], problem="Ice",
         )
 
@@ -227,7 +227,7 @@ if __name__ == "__main__":
             xlabel="Snow",
             ylabel="Ice",
         )
-        plot_parameters(site, "ice", vars, var_names, probs_max)
+        plot_parameters(site, "ice", vars, var_names, probs_mar)
 
         """VV"""
 
@@ -273,4 +273,4 @@ if __name__ == "__main__":
             xlabel="Ice",
             ylabel="sigma_VV - Snow dependency * Snow",
         )
-        plot_parameters(site, "ice", vars, var_names, probs_max)
+        plot_parameters(site, "vv", vars, var_names, probs_mar)
