@@ -9,11 +9,6 @@ import pandas as pd
 
 from prepare_variables import get_variables
 
-ANGLE_SITE = {
-    'S': 6,
-    'D': 2,
-    'K': 14,
-}
 FIGURE_PATH = "figures"
 
 
@@ -21,7 +16,7 @@ def pairplots(site, data, products):
     data = np.concatenate(
         [
             data.values[:, [2, 3]],
-            products[:, ANGLE_SITE[site], None],
+            products[:, None],
             data.values[:, 4],
         ],
         axis=1,
@@ -177,11 +172,10 @@ def plot_parameters(site, problem, vars, var_names, probs_mar):
 if __name__ == "__main__":
     STEPS = 16  # Remplacer par 32 pour plus de définition.
 
-    for site, data, products in get_variables():
+    for site, data in get_variables():
         print(f"Site {site}")
 
-        snow, ice, vv = data[["snow", "ice", "VV"]].values.T
-        products = products[:, ANGLE_SITE[site]]
+        snow, ice, wind, vv = data[["snow", "ice", "wind", "VV"]].values.T
 
         """Snow"""
 
@@ -191,14 +185,14 @@ if __name__ == "__main__":
         vars = [product_dep, snow_0, snow_noise]
         var_names = ["Shore-wind product", "S0", "sigma_S"]
 
-        posterior = get_posterior(vars, [products, np.ones_like(snow)], snow)
+        posterior = get_posterior(vars, [wind, np.ones_like(snow)], snow)
         argmax, unravel_argmax, vars_max, probs_mar, std_max = get_stats(
             posterior, vars, null_dims=[0], problem="Snow",
         )
 
         plot_linear_dependency(
             "snow",
-            products,
+            wind,
             snow,
             *vars_max,
             xlabel="Shore-wind product",
