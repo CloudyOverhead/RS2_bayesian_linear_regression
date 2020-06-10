@@ -7,14 +7,13 @@ from matplotlib import pyplot as plt
 import pandas as pd
 
 from process_bathymetry import load_bathymetry
-from wind_tables import ANGLES, K_WIND, D_WIND, S_WIND
 
 DATA_PATH = "data"
 FIGURE_PATH = "figures"
-SITE_WIND = {
-    "K": K_WIND,
-    "D": D_WIND,
-    "S": S_WIND,
+ANGLE_SITE = {
+    'S': 3*np.pi/4,
+    'D': np.pi/4,
+    'K': -np.pi/8,
 }
 
 
@@ -112,14 +111,13 @@ def compute_wind_shore_product(site, center, y, x):
     assert ~np.isnan(angle).any()
     angle[(x-x_center) < 0] += np.pi
 
-    distance, angle = distance[:, None], angle[:, None]
-    angle_wind = ANGLES[None, :]
+    angle_wind = ANGLE_SITE[site]
     product = distance * np.cos(angle-angle_wind)
 
     return product
 
 
-def get_variables(year=0,plot=False, select_angle=0):
+def get_variables(year=0, plot=False):
     files = [
         file for file in listdir(DATA_PATH)
         if "bathymetry" in file and file[-3:] == 'tif'
@@ -156,7 +154,8 @@ def get_variables(year=0,plot=False, select_angle=0):
             delimiter=',',
             usecols=[1, 2],
         )
-        product = compute_wind_shore_product(site, center, y_data, x_data)
+        wind = compute_wind_shore_product(site, center, y_data, x_data)
+        data["wind"] = wind
 
         # if site != "S":
         #     velocity_temp = data["velocity"]
@@ -172,15 +171,15 @@ def get_variables(year=0,plot=False, select_angle=0):
             plt.arrow(
                 x_data.min(),
                 y_data.min(),
-                5 * np.cos(-ANGLES[select_angle]),  # y axis is reversed.
-                5 * np.sin(-ANGLES[select_angle]),  # y axis is reversed.
+                5 * np.cos(-ANGLE_SITE[site]),  # y axis is reversed.
+                5 * np.sin(-ANGLE_SITE[site]),  # y axis is reversed.
                 color='r',
                 width=.5,
             )
             plt.scatter(
                 x_data,
                 y_data,
-                c=product[:, select_angle],
+                c=data["wind"],
                 s=20,
                 cmap="seismic",
             )
@@ -190,9 +189,9 @@ def get_variables(year=0,plot=False, select_angle=0):
             plt.savefig(join(FIGURE_PATH, f"{site}_loc"))
             plt.show()
 
-        yield site, data, product
+        yield site, data
 
 
 if __name__ == "__main__":
-    for _ in get_variables(plot=True, select_angle=3):
+    for _ in get_variables(plot=True):
         pass

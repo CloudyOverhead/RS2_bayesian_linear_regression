@@ -1,5 +1,4 @@
 from os.path import join
-from copy import copy
 
 import numpy as np
 import matplotlib as mpl
@@ -9,11 +8,6 @@ import pandas as pd
 
 from prepare_variables import get_variables
 
-ANGLE_SITE = {
-    'S': 6,
-    'D': 2,
-    'K': 14,
-}
 YEAR = "2018"
 FIGURE_PATH = "figures"
 
@@ -22,7 +16,7 @@ def pairplots(site, data, products):
     data = np.concatenate(
         [
             data.values[:, [2, 3]],
-            products[:, ANGLE_SITE[site], None],
+            products[:, None],
             data.values[:, 4],
         ],
         axis=1,
@@ -117,6 +111,7 @@ def gaussian_fill_between(a, b, std, xlim=None, ylim=None):
     if ylim is None:
         ylim = plt.ylim()
 
+    # Alternative representation.
     # for s, a in zip(range(1, 4), [.25, .125, .0625]):
     #     plt.fill_between(
     #         p,
@@ -146,7 +141,7 @@ def gaussian_fill_between(a, b, std, xlim=None, ylim=None):
 def plot_linear_dependency(problem, x, y, a, b, std, xlabel="", ylabel=""):
     plt.title(f"Site {site}")
     plt.scatter(x, y, s=4, c="k")
-    extend = products.max() - products.min()
+    extend = x.max() - x.min()
     x_line = np.linspace(x.min()-extend, x.max()+extend, 2)
     line = a*x_line + b
     gaussian_fill_between(a, b, std)
@@ -160,7 +155,9 @@ def plot_linear_dependency(problem, x, y, a, b, std, xlabel="", ylabel=""):
 
 def plot_parameters(site, problem, vars, var_names, probs_mar):
     fig, axes = plt.subplots(1, len(vars), sharey=True)
-    axes[0].set_ylabel("Marginal probability (normalized to maximum)")
+    axes[0].set_ylabel(
+        r"Marginal probability $\frac{p(\theta)}{p_{max}(\theta)}$"
+    )
     for i, (var, name) in enumerate(zip(vars, var_names)):
         ax = axes.flatten()[i]
         width = np.diff(var)
@@ -175,32 +172,32 @@ def plot_parameters(site, problem, vars, var_names, probs_mar):
     # plt.show()
 
 if __name__ == "__main__":
-    STEPS = 16  # Remplacer par 32 pour plus de définition.
+    STEPS = 32  # NOTE Reduce step size to make computations faster.
 
-    for site, data, products in get_variables(year=YEAR):
+    for site, data in get_variables(year=YEAR):
         print(f"Site {site}")
-        snow, ice, vv = data[["snow", "ice", "VV"]].values.T
-        products = products[:, ANGLE_SITE[site]]
+
+        snow, ice, wind, vv = data[["snow", "ice", "wind", "VV"]].values.T
 
         """Snow"""
 
         product_dep = np.linspace(.0, .25, STEPS)
         snow_0 = np.linspace(-.5, .5, STEPS)
-        snow_noise = np.logspace(-1.0, .25, STEPS)
+        snow_noise = np.logspace(-.5, 0.0, STEPS)
         vars = [product_dep, snow_0, snow_noise]
-        var_names = ["Shore-wind product", "S0", "sigma_S"]
+        var_names = ["Wind dependency", r"$S_0$", r"$\sigma_S$"]
 
-        posterior = get_posterior(vars, [products, np.ones_like(snow)], snow)
+        posterior = get_posterior(vars, [wind, np.ones_like(snow)], snow)
         argmax, unravel_argmax, vars_max, probs_mar, std_max = get_stats(
             posterior, vars, null_dims=[0], problem="Snow",
         )
 
         plot_linear_dependency(
             "snow",
-            products,
+            wind,
             snow,
             *vars_max,
-            xlabel="Shore-wind product",
+            xlabel="Wind dependency",
             ylabel="Snow",
         )
         plot_parameters(site, "snow", vars, var_names, probs_mar)
@@ -209,9 +206,9 @@ if __name__ == "__main__":
 
         snow_dep = np.linspace(-1.0, 0.0, STEPS)
         ice_0 = np.linspace(-.5, .5, STEPS)
-        ice_noise = np.logspace(-1.0, .25, STEPS)
+        ice_noise = np.logspace(-.5, 0.0, STEPS)
         vars = [snow_dep, ice_0, ice_noise]
-        var_names = ["Snow dependency", "I0", "sigma_I"]
+        var_names = ["Snow dependency", r"$I_0$", r"$\sigma_I$"]
 
         posterior = get_posterior(vars, [snow, np.ones_like(ice)], ice)
         argmax, unravel_argmax, vars_max, probs_mar, std_max = get_stats(
@@ -238,8 +235,8 @@ if __name__ == "__main__":
         var_names = [
             "Snow dependency",
             "Ice dependency",
-            "sigma_VV0",
-            "sigma_sigma_VV",
+            r"$\sigma_{VV~0}$",
+            r"$\sigma_{\sigma_{VV}}$",
         ]
 
         posterior = get_posterior(
@@ -262,7 +259,7 @@ if __name__ == "__main__":
             b=vv_0,
             std=vv_noise,
             xlabel="Snow",
-            ylabel="sigma_VV - Ice dependency * Ice",
+            ylabel=r"$\sigma_{VV}$ - Ice dependency * Ice",
         )
         plot_linear_dependency(
             "vv_to_ice",
@@ -272,6 +269,6 @@ if __name__ == "__main__":
             b=vv_0,
             std=vv_noise,
             xlabel="Ice",
-            ylabel="sigma_VV - Snow dependency * Snow",
+            ylabel=r"$\sigma_{VV}$ - Snow dependency * Snow",
         )
         plot_parameters(site, "vv", vars, var_names, probs_mar)
