@@ -72,8 +72,8 @@ def get_stats(posterior, vars, null_dims, print_=True, problem=None):
         prob_null = posterior[..., idx_null]
     prob_null = prob_null.max()
     vars_max = [var[unravel_argmax[i]] for i, var in enumerate(vars)]
-    probs_max = get_max_distribution(unravel_argmax, posterior)
-    std_max = [weighted_std(var, prob) for var, prob in zip(vars, probs_max)]
+    probs_mar = marginal_distributions(unravel_argmax, posterior)
+    std_mar = [weighted_std(var, prob) for var, prob in zip(vars, probs_mar)]
 
     if print_:
         print(" "*3, f"{problem}:")
@@ -91,12 +91,11 @@ def weighted_std(values, weights):
     return np.sqrt(variance)
 
 
-def get_max_distribution(argmax, posterior):
+def marginal_distributions(argmax, posterior):
     distributions = []
     for i, (var, name) in enumerate(zip(vars, var_names)):
-        temp_argmax = copy(argmax)
-        temp_argmax[i] = ...
-        distributions.append(posterior[temp_argmax])
+        axis = tuple(j for j in range(len(posterior.shape)) if i != j)
+        distributions.append(np.sum(posterior, axis=axis))
     return distributions
 
 
@@ -156,7 +155,7 @@ def plot_linear_dependency(problem, x, y, a, b, std, xlabel="", ylabel=""):
 
 def plot_parameters(site, problem, vars, var_names, probs_max):
     fig, axes = plt.subplots(1, len(vars), sharey=True)
-    axes[0].set_ylabel("Probability (normalized to maximum)")
+    axes[0].set_ylabel("Marginal probability (normalized to maximum)")
     for i, (var, name) in enumerate(zip(vars, var_names)):
         ax = axes.flatten()[i]
         width = np.diff(var)
