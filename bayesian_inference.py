@@ -184,7 +184,7 @@ if __name__ == "__main__":
 
         product_dep = np.linspace(.0, .25, STEPS)
         snow_0 = np.linspace(-.5, .5, STEPS)
-        snow_noise = np.logspace(-1.0, .25, STEPS)
+        snow_noise = np.logspace(-.5, 0.0, STEPS)
         vars = [product_dep, snow_0, snow_noise]
         var_names = ["Wind dependency", r"$S_0$", r"$\sigma_S$"]
 
@@ -207,7 +207,7 @@ if __name__ == "__main__":
 
         snow_dep = np.linspace(-1.0, 0.0, STEPS)
         ice_0 = np.linspace(-.5, .5, STEPS)
-        ice_noise = np.logspace(-1.0, .25, STEPS)
+        ice_noise = np.logspace(-.5, 0.0, STEPS)
         vars = [snow_dep, ice_0, ice_noise]
         var_names = ["Snow dependency", r"$I_0$", r"$\sigma_I$"]
 
