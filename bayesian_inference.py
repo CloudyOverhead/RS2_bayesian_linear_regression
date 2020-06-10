@@ -1,5 +1,4 @@
 from os.path import join
-from copy import copy
 
 import numpy as np
 import matplotlib as mpl
