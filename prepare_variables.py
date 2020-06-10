@@ -1,10 +1,11 @@
 from os import listdir
 from os.path import join
+import re
 
 import numpy as np
 from matplotlib import pyplot as plt
+import pandas as pd
 
-from spatial_detrending import read_data
 from process_bathymetry import load_bathymetry
 from wind_tables import ANGLES, K_WIND, D_WIND, S_WIND
 
@@ -15,6 +16,50 @@ SITE_WIND = {
     "D": D_WIND,
     "S": S_WIND,
 }
+
+
+def read_data(site, remove_jan=True, normalize=True):
+    files = listdir(DATA_PATH)
+    files = [
+        file for file in files
+        if '.csv' in file
+        and 'noship' not in file
+        and 'both' not in file
+        and site in file
+        and "bathymetry" not in file
+        and "distance" not in file
+    ]
+    if remove_jan:
+        files = [
+            file for file in files
+            if re.match(".*[0-9]{4}01[0-9]{2}.*", file) is None
+        ]
+
+    data = [
+        pd.read_csv(
+            join(DATA_PATH, file),
+            comment='#',
+        )
+        for file in files
+    ]
+
+    for i, d in enumerate(data):
+        ice = [s for s in d.columns if "ice" in s.lower()]
+        snow = [s for s in d.columns if "snow" in s.lower()]
+        assert len(ice) == 1 and len(snow) == 1
+        ice, snow = ice[0], snow[0]
+        d = d[["long", "lat", ice, snow, "VV"]]
+        d.columns = ["long", "lat", "ice", "snow", "VV"]
+        if normalize:
+            for var in ["ice", "snow", "VV"]:
+                d.loc[:, var] = (d[var]-d[var].mean()) / d[var].std()
+        data[i] = d
+
+    data = pd.concat(data)
+
+    data = data.loc[~np.isnan(data["ice"])]
+
+    return data
 
 
 def correct_transform(site, transform, ind):
