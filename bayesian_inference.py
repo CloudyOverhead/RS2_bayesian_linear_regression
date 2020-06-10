@@ -234,7 +234,7 @@ if __name__ == "__main__":
         vv_snow_dep = np.linspace(-.5, .5, STEPS)
         vv_ice_dep = np.linspace(-.5, .5, STEPS)
         vv_0 = np.linspace(-.5, .5, STEPS)
-        vv_noise = np.logspace(-1.0, 0, STEPS)
+        vv_noise = np.logspace(-.5, 0, STEPS)
         vars = [vv_snow_dep, vv_ice_dep, vv_0, vv_noise]
         var_names = [
             "Snow dependency",
