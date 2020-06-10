@@ -6,6 +6,7 @@ import numpy as np
 from PIL import Image
 from PIL.TiffTags import TAGS
 import rasterio
+import pandas as pd
 
 DATA_PATH = "data"
 FIGURE_PATH = "figures"
@@ -14,7 +15,10 @@ FIGURE_PATH = "figures"
 def load_bathymetry(file_path):
     dataset = rasterio.open(file_path)
     bathymetry = dataset.read(1)
-    bathymetry[bathymetry < 0] = np.nan
+    if isinstance(bathymetry, pd.DataFrame):
+        bathymetry.loc[bathymetry < 0] = np.nan
+    else:
+        bathymetry[bathymetry < 0] = np.nan
     return bathymetry, dataset.transform
 
 
