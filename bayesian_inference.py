@@ -141,7 +141,7 @@ def gaussian_fill_between(a, b, std, xlim=None, ylim=None):
 def plot_linear_dependency(problem, x, y, a, b, std, xlabel="", ylabel=""):
     plt.title(f"Site {site}")
     plt.scatter(x, y, s=4, c="k")
-    extend = products.max() - products.min()
+    extend = x.max() - x.min()
     x_line = np.linspace(x.min()-extend, x.max()+extend, 2)
     line = a*x_line + b
     gaussian_fill_between(a, b, std)
