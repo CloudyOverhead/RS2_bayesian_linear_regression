@@ -155,12 +155,13 @@ def get_variables(plot=False, select_angle=0):
         )
         product = compute_wind_shore_product(site, center, y_data, x_data)
 
-        velocity_temp = data["velocity"]
-        velocity_mask = (
-            velocity_temp < velocity_temp.mean() + .1*velocity_temp.std()
-        )
-        data, product = data.loc[velocity_mask], product[velocity_mask]
-        x_data, y_data = x_data[velocity_mask], y_data[velocity_mask]
+        if site != "S":
+            velocity_temp = data["velocity"]
+            velocity_mask = (
+                velocity_temp < velocity_temp.mean() + .1*velocity_temp.std()
+            )
+            data, product = data.loc[velocity_mask], product[velocity_mask]
+            x_data, y_data = x_data[velocity_mask], y_data[velocity_mask]
 
         if plot:
             plt.gcf().set_size_inches(8, 8)
