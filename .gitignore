@@ -1,3 +1,5 @@
 desktop.ini
 figures/*
 *.pdf
+.DS_Store
+__pycache__/
