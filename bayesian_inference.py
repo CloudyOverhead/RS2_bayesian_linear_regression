@@ -248,8 +248,10 @@ if __name__ == "__main__":
             [snow, ice, np.ones_like(vv)],
             vv,
         )
-        argmax, unravel_argmax, vars_max, probs_max, std_max = get_stats(
-            posterior, vars, null_dims=[0], problem="Ice",
+        # In this case, the null hypothesis is neither ice nor snow having an
+        # effect on vv.
+        argmax, unravel_argmax, vars_max, probs_mar, std_max = get_stats(
+            posterior, vars, null_dims=[0, 1], problem="VV",
         )
 
         vv_snow_dep, vv_ice_dep, vv_0, vv_noise = vars_max
