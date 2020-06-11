@@ -9,9 +9,8 @@ from scipy import stats
 
 from prepare_variables import get_variables
 
-YEAR = "2016"
+YEAR = "2018"
 FIGURE_PATH = "figures"
-
 
 def pairplots(site, data, products):
     data = np.concatenate(
@@ -149,13 +148,14 @@ def plot_linear_dependency(problem, x, y, a, b, std, xlabel="", ylabel=""):
     plt.plot(x_line, line, ls='--', c="k")
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
-    plt.savefig(join(FIGURE_PATH, f"Results_{problem}_{site}"))
+    plt.savefig(join(FIGURE_PATH, f"Results_{problem}_{site}_{YEAR}"))
     # plt.show()
+    plt.close()
 
 def export_xy(problem, x, y, a, b, std, xlabel="", ylabel=""):
     # write data to txt file
     to_save = pd.DataFrame({"x":x, "y":y})
-    save_path = f"{problem}_{site}_{YEAR}.txt"
+    save_path = f"data_analyzed/{problem}_{site}_{YEAR}.txt"
     to_save.to_csv(save_path)
     with open(save_path, 'a') as f:
         f.write(f"# {problem} x y values for Bayesian linear regression on {site} in {YEAR} \n")
@@ -176,8 +176,9 @@ def plot_parameters(site, problem, vars, var_names, probs_mar):
         if i == len(vars)-1:
             ax.set_xscale('log')
     plt.tight_layout()
-    plt.savefig(join(FIGURE_PATH, f"Parameters_{problem}_{site}"))
+    plt.savefig(join(FIGURE_PATH, f"Parameters_{problem}_{site}_{YEAR}"))
     # plt.show()
+    plt.close()
 
 if __name__ == "__main__":
     STEPS = 32  # NOTE Reduce step size to make computations faster.
