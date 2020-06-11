@@ -166,7 +166,7 @@ def plot_parameters(site, problem, vars, var_names, probs_mar):
         fig = plt.figure(figsize=(11.5, 3))
     else:
         fig = plt.figure(figsize=(8.5, 3))
-
+    mpl.rcParams["font.family"] = "Arial"
     fig.subplots_adjust(left=0.1, right=0.95, bottom=0.2, top=0.92, hspace=0.2, wspace=0.2) # adjust the box of axes regarding the figure size
     gs = mpl.gridspec.GridSpec(1, len(var_names))
     axes = list()
@@ -186,11 +186,21 @@ def plot_parameters(site, problem, vars, var_names, probs_mar):
         ax.set_xlim([var.min(), var.max()])
         if i == len(vars)-1:
             ax.set_xscale('log')
+            ax.set_xlim(0.1,10)
         if i > 0:
             ax.get_yaxis().set_ticklabels([])
+        else:
+            if site == "D":
+                bay = "Deception Bay"
+            elif site == "S":
+                bay = "Salluit"
+            elif site == "K":
+                bay = "Kangiqsujuaq"
+            ax.annotate(f"{bay}\n{YEAR}", xy=(0.9, 0.85), xycoords="axes fraction", ha="right", color="k")
+
         ax.tick_params(direction='in',which="both",right=1,top=0)
 
-    fig.savefig(join(FIGURE_PATH, f"Parameters_{problem}_{site}_{YEAR}"))
+    fig.savefig(join(FIGURE_PATH, f"Parameters_{problem}_{site}_{YEAR}"),transparent=False, dpi=300)
     # plt.show()
     plt.close()
 
