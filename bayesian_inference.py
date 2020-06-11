@@ -162,12 +162,23 @@ def export_xy(problem, x, y, a, b, std, xlabel="", ylabel=""):
         f.write(f"# x = {xlabel}, y = {ylabel} \n")
 
 def plot_parameters(site, problem, vars, var_names, probs_mar):
-    fig, axes = plt.subplots(1, len(vars), sharey=True)
+    if len(var_names) == 4:
+        fig = plt.figure(figsize=(11.5, 3))
+    else:
+        fig = plt.figure(figsize=(8.5, 3))
+
+    fig.subplots_adjust(left=0.1, right=0.95, bottom=0.2, top=0.92, hspace=0.2, wspace=0.2) # adjust the box of axes regarding the figure size
+    gs = mpl.gridspec.GridSpec(1, len(var_names))
+    axes = list()
+    for i in np.arange(len(var_names)):
+        axes.append(plt.subplot(gs[i]))
+
     axes[0].set_ylabel(
         r"Marginal probability $\frac{p(\theta)}{p_{max}(\theta)}$"
     )
+
     for i, (var, name) in enumerate(zip(vars, var_names)):
-        ax = axes.flatten()[i]
+        ax = axes[i]
         width = np.diff(var)
         probs_mar_ = probs_mar[i] / probs_mar[i].max()
         ax.bar(var, probs_mar_, [*width, width[-1]], color=[.3, .3, .3])
@@ -175,13 +186,16 @@ def plot_parameters(site, problem, vars, var_names, probs_mar):
         ax.set_xlim([var.min(), var.max()])
         if i == len(vars)-1:
             ax.set_xscale('log')
-    plt.tight_layout()
-    plt.savefig(join(FIGURE_PATH, f"Parameters_{problem}_{site}_{YEAR}"))
+        if i > 0:
+            ax.get_yaxis().set_ticklabels([])
+        ax.tick_params(direction='in',which="both",right=1,top=0)
+
+    fig.savefig(join(FIGURE_PATH, f"Parameters_{problem}_{site}_{YEAR}"))
     # plt.show()
     plt.close()
 
 if __name__ == "__main__":
-    STEPS = 32  # NOTE Reduce step size to make computations faster.
+    STEPS = 64  # NOTE Reduce step size to make computations faster.
 
     for site, data in get_variables(year=YEAR):
         print(f"Site {site}")
@@ -190,11 +204,11 @@ if __name__ == "__main__":
 
         """Snow"""
 
-        product_dep = np.linspace(.0, .25, STEPS)
-        snow_0 = np.linspace(-.5, .5, STEPS)
-        snow_noise = np.logspace(-.5, 0.0, STEPS)
+        product_dep = np.linspace(-.1, .5, STEPS)
+        snow_0 = np.linspace(-1, 1, STEPS)
+        snow_noise = np.logspace(-.5, 0.5, STEPS)
         vars = [product_dep, snow_0, snow_noise]
-        var_names = ["Wind dependency", r"$S_0$", r"$\sigma_S$"]
+        var_names = [r"$\alpha$", r"$h_{s_{0}}$", r"$\eta_s$"]
 
         posterior = get_posterior(vars, [wind, np.ones_like(snow)], snow)
         argmax, unravel_argmax, vars_max, probs_mar, std_max = get_stats(
@@ -221,11 +235,11 @@ if __name__ == "__main__":
 
         """Ice"""
 
-        snow_dep = np.linspace(-1.0, 0.0, STEPS)
-        ice_0 = np.linspace(-.5, .5, STEPS)
-        ice_noise = np.logspace(-.5, 0.0, STEPS)
+        snow_dep = np.linspace(-1.5, 1, STEPS)
+        ice_0 = np.linspace(-1, 1, STEPS)
+        ice_noise = np.logspace(-.5, 1, STEPS)
         vars = [snow_dep, ice_0, ice_noise]
-        var_names = ["Snow dependency", r"$I_0$", r"$\sigma_I$"]
+        var_names = [r"$\beta$", r"$h_{i_{0}}$", r"$\eta_i$"]
 
         posterior = get_posterior(vars, [snow, np.ones_like(ice)], ice)
         argmax, unravel_argmax, vars_max, probs_mar, std_max = get_stats(
@@ -244,16 +258,16 @@ if __name__ == "__main__":
 
         """VV"""
 
-        vv_snow_dep = np.linspace(-.5, .5, STEPS)
-        vv_ice_dep = np.linspace(-.5, .5, STEPS)
-        vv_0 = np.linspace(-.5, .5, STEPS)
-        vv_noise = np.logspace(-.5, 0, STEPS)
+        vv_snow_dep = np.linspace(-2, 1.5, STEPS/2)
+        vv_ice_dep = np.linspace(-2, 1.5, STEPS/2)
+        vv_0 = np.linspace(-1, 1, STEPS/2)
+        vv_noise = np.logspace(-.5, 1, STEPS/2)
         vars = [vv_snow_dep, vv_ice_dep, vv_0, vv_noise]
         var_names = [
-            "Snow dependency",
-            "Ice dependency",
+            r"$\gamma$",
+            r"$\delta$",
             r"$\sigma_{VV~0}$",
-            r"$\sigma_{\sigma_{VV}}$",
+            r"$\eta_{\sigma_{VV}}$",
         ]
 
         posterior = get_posterior(
