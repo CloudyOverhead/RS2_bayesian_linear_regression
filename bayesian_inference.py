@@ -49,7 +49,6 @@ def get_posterior(vars, xs, y):
         x=y,
         mean=np.sum([a*x for a, x in zip(as_, xs)], axis=0),
         std=std,
-        n=len(y),
     )
     posterior = np.prod(posterior, axis=-1)
 
@@ -98,10 +97,10 @@ def marginal_distributions(argmax, posterior):
     return distributions
 
 
-def gaussian(x, mean, std, n=1):
+def gaussian(x, mean, std):
     return (
         np.exp(-((x-mean)/std)**2 / 2)
-        / (np.sqrt(2*np.pi) * std)**n
+        / (np.sqrt(2*np.pi) * std)
     )
 
 
