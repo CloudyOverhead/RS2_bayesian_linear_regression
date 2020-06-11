@@ -5,10 +5,11 @@ import matplotlib as mpl
 from matplotlib import pyplot as plt
 import seaborn as sns
 import pandas as pd
+from scipy import stats
 
 from prepare_variables import get_variables
 
-YEAR = "2018"
+YEAR = "2016"
 FIGURE_PATH = "figures"
 
 
@@ -152,6 +153,14 @@ def plot_linear_dependency(problem, x, y, a, b, std, xlabel="", ylabel=""):
     plt.savefig(join(FIGURE_PATH, f"Results_{problem}_{site}"))
     # plt.show()
 
+def export_xy(problem, x, y, a, b, std, xlabel="", ylabel=""):
+    # write data to txt file
+    to_save = pd.DataFrame({"x":x, "y":y})
+    save_path = f"{problem}_{site}_{YEAR}.txt"
+    to_save.to_csv(save_path)
+    with open(save_path, 'a') as f:
+        f.write(f"# {problem} x y values for Bayesian linear regression on {site} in {YEAR} \n")
+        f.write(f"# x = {xlabel}, y = {ylabel} \n")
 
 def plot_parameters(site, problem, vars, var_names, probs_mar):
     fig, axes = plt.subplots(1, len(vars), sharey=True)
@@ -193,6 +202,14 @@ if __name__ == "__main__":
         )
 
         plot_linear_dependency(
+            "snow",
+            wind,
+            snow,
+            *vars_max,
+            xlabel="Wind dependency",
+            ylabel="Snow",
+        )
+        export_xy(
             "snow",
             wind,
             snow,

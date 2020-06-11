@@ -3,3 +3,4 @@ figures/*
 *.pdf
 .DS_Store
 __pycache__/
+data_analyzed/
