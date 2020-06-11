@@ -17,7 +17,7 @@ ANGLE_SITE = {
 }
 
 
-def read_data(site, year, remove_jan=True, normalize=True):
+def read_data(site, year, remove_jan=True, remove_apr=False, normalize=True):
     files = listdir(DATA_PATH)
     files = [
         file for file in files
@@ -32,9 +32,14 @@ def read_data(site, year, remove_jan=True, normalize=True):
     if remove_jan:
         files = [
             file for file in files
-            if re.match(".*[0-9]{4}01[0-9]{2}.*", file) is None
+            if re.match(".*[0-9]{4}(01|02)[0-9]{2}.*", file) is None
         ]
-
+    if remove_apr:
+        files = [
+            file for file in files
+            if re.match(".*[0-9]{4}(04|05)[0-9]{2}.*", file) is None
+        ]
+    print(files)
     data = [
         pd.read_csv(
             join(DATA_PATH, file),
@@ -124,11 +129,13 @@ def get_variables(year=0, plot=False):
     ]
     for site in ["S", "D", "K"]:
         if (year == "2016") & (site == "S"):
+            # print(" january")
             continue
         file_path = [file for file in files if (site in file)][0]
         _, transform = load_bathymetry(join(DATA_PATH, file_path))
         velocity = np.load(join(DATA_PATH, f"{site}_velocity.npy"))
         data = read_data(site, year)
+        # data = reads_data(site, year, remove_apr=True, remove_jan=False)
         x_data, y_data, ice, snow, vv = [
             col for _, col in data.iteritems()
         ]
