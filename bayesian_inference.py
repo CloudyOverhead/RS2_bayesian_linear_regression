@@ -49,7 +49,7 @@ def get_posterior(vars, xs, y):
         x=y,
         mean=np.sum([a*x for a, x in zip(as_, xs)], axis=0),
         std=std,
-        n=len(as_),
+        n=len(y),
     )
     posterior = np.prod(posterior, axis=-1)
 
