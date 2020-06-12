@@ -6,11 +6,14 @@ from matplotlib import pyplot as plt
 import seaborn as sns
 import pandas as pd
 from scipy import stats
+import sys
 
 from prepare_variables import get_variables
 
-YEAR = "2018"
+YEAR = "2016"
+SEASON = "apr" # jan or apr or 0
 FIGURE_PATH = "figures"
+LOG = 1
 
 def pairplots(site, data, products):
     data = np.concatenate(
@@ -56,24 +59,72 @@ def get_posterior(vars, xs, y):
 
 
 def get_stats(posterior, vars, null_dims, print_=True, problem=None):
+    # Maximum posterior probability
     argmax = np.argmax(posterior)
-    unravel_argmax = list(np.unravel_index(argmax, posterior.shape))
     prob_max = posterior.flatten()[argmax]
-    # prob_uniform = posterior.mean()
-    prob_null = get_prob_null(posterior, vars, null_dims)
+    # Mean and std of each parameter's marginal distribution at prob_max
+    unravel_argmax = list(np.unravel_index(argmax, posterior.shape))
     vars_max = [var[unravel_argmax[i]] for i, var in enumerate(vars)]
     probs_mar = marginal_distributions(unravel_argmax, posterior)
     std_mar = [weighted_std(var, prob) for var, prob in zip(vars, probs_mar)]
+    # prob_uniform = posterior.mean()
 
-    if print_:
-        print(" "*3, f"{problem}:")
-        print(" "*7, "Best fit mean:", ["{:.3f}".format(x) for x in vars_max])
-        print(" "*7, "Best fit std:", ["{:.3f}".format(x) for x in std_mar])
-        # print(" "*7, "Rapport à l'uniforme:", prob_max / prob_uniform)
-        print(" "*7, "Rapport à l'hypothèse nulle:", "{:.0f}".format(prob_max / prob_null), ", ({:.0E})".format(prob_max / prob_null))
+    # Maximum posterior probability for the null hypothesis (same model with null_dims)
+    prob_null = get_prob_null(posterior, vars, null_dims)
 
-    return argmax, unravel_argmax, vars_max, probs_mar, std_mar
+    # if print_:
+    #     print(" "*3, f"{problem}:")
+    #     print(" "*7, "Best fit mean:", ["{:.3f}".format(x) for x in vars_max])
+    #     print(" "*7, "Best fit std:", ["{:.3f}".format(x) for x in std_mar])
+    #     # print(" "*7, "Rapport à l'uniforme:", prob_max / prob_uniform)
+    #     print(" "*7, "Rapport à l'hypothèse nulle:", "{:.0f}".format(prob_max / prob_null), ", ({:.0E})".format(prob_max / prob_null))
 
+    return argmax, prob_max, unravel_argmax, vars_max, probs_mar, std_mar, prob_null
+
+"""Print stats info to console and save as text file"""
+def stats_info(vars_max, std_mar, prob_max, prob_null, site, problem, log_path=0):
+    info = [
+        " "*3 + f"{problem}:",
+        " "*7 + "Best fit mean: " + ", ".join(["{:.3f}".format(x) for x in vars_max]),
+        " "*7 + "Best fit std: " + ", ".join(["{:.3f}".format(x) for x in std_mar]),
+        " "*7 + "Rapport à l'hypothèse nulle: " + "{:.0f}".format(prob_max / prob_null) + " ({:.0E})".format(prob_max / prob_null)
+    ]
+    if log_path:
+        f = open(log_path, "a")
+    for line in info:
+        print(line)
+        if log_path:
+            f.write(line+"\n")
+    if log_path:
+        f.close()
+
+"""Save parameter mean and std at max posterior prob"""
+def save_param(vars_max, std_mar, var_names, site, problem):
+    save_name = f"param_{problem}_{site}"
+    if YEAR:
+        save_name += f"_{YEAR}"
+    if SEASON:
+        save_name += f"_{SEASON}"
+    save_path = join(FIGURE_PATH, save_name+".csv")
+    save_data = pd.DataFrame({"param":var_names, "mean":vars_max, "std":std_mar})
+    save_data.to_csv(save_path)
+
+"""Initiate a log text file with header, return log_path"""
+def init_log(site, YEAR, SEASON, files):
+    print(files)
+    log_name = f"log_{site}"
+    if YEAR:
+        log_name += f"_{YEAR}"
+    if SEASON:
+        log_name += f"_{SEASON}"
+    log_path = join(FIGURE_PATH, log_name+".txt")
+    f = open(log_path,"w+")
+    f.write("Log for bayesian inference on files \n")
+    for file in files:
+        f.write(file+"\n")
+    f.close()
+
+    return log_path
 
 def get_prob_null(posterior, vars, null_dims):
     for dim in sorted(null_dims)[::-1]:
@@ -136,8 +187,8 @@ def gaussian_fill_between(a, b, std, xlim=None, ylim=None):
         cmap=cmap,
     )
 
-
 def plot_linear_dependency(problem, x, y, a, b, std, xlabel="", ylabel=""):
+    fig = plt.figure(figsize=(6,4))
     plt.title(f"Site {site}")
     plt.scatter(x, y, s=4, c="k")
     extend = x.max() - x.min()
@@ -148,8 +199,12 @@ def plot_linear_dependency(problem, x, y, a, b, std, xlabel="", ylabel=""):
     plt.plot(x_line, line, ls='--', c="k")
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
-    plt.savefig(join(FIGURE_PATH, f"Results_{problem}_{site}_{YEAR}"))
-    # plt.show()
+    save_name = f"Results_{problem}_{site}"
+    if YEAR:
+        save_name += f"_{YEAR}"
+    if SEASON:
+        save_name += f"_{SEASON}"
+    fig.savefig(join(FIGURE_PATH, save_name),transparent=False, dpi=300)    # plt.show()
     plt.close()
 
 def export_xy(problem, x, y, a, b, std, xlabel="", ylabel=""):
@@ -199,16 +254,26 @@ def plot_parameters(site, problem, vars, var_names, probs_mar):
             ax.annotate(f"{bay}\n{YEAR}", xy=(0.9, 0.85), xycoords="axes fraction", ha="right", color="k")
 
         ax.tick_params(direction='in',which="both",right=1,top=0)
+    save_name = f"Parameters_{problem}_{site}"
+    if YEAR:
+        save_name += f"_{YEAR}"
+    if SEASON:
+        save_name += f"_{SEASON}"
 
-    fig.savefig(join(FIGURE_PATH, f"Parameters_{problem}_{site}_{YEAR}"),transparent=False, dpi=300)
+    fig.savefig(join(FIGURE_PATH, save_name),transparent=False, dpi=300)
     # plt.show()
     plt.close()
 
 if __name__ == "__main__":
     STEPS = 64  # NOTE Reduce step size to make computations faster.
+    if (YEAR == "2016") & (SEASON != "apr"):
+        print("Not enough data for all year 2016 or jan 2016")
+        sys.exit()
 
-    for site, data in get_variables(year=YEAR):
+    for site, data, data_files in get_variables(year=YEAR, season=SEASON):
+
         print(f"Site {site}")
+        log_path = init_log(site, YEAR, SEASON, data_files)
 
         snow, ice, wind, vv = data[["snow", "ice", "wind", "VV"]].values.T
 
@@ -221,9 +286,12 @@ if __name__ == "__main__":
         var_names = [r"$\alpha$", r"$h_{s_{0}}$", r"$\eta_s$"]
 
         posterior = get_posterior(vars, [wind, np.ones_like(snow)], snow)
-        argmax, unravel_argmax, vars_max, probs_mar, std_max = get_stats(
+        argmax, prob_max, unravel_argmax, vars_max, probs_mar, std_mar, prob_null = get_stats(
             posterior, vars, null_dims=[0], problem="Snow",
         )
+        stats_info(vars_max, std_mar, prob_max, prob_null,
+            site=site, problem="Snow", log_path=log_path)
+        save_param(vars_max, std_mar, var_names, site, problem="Snow")
 
         plot_linear_dependency(
             "snow",
@@ -252,9 +320,12 @@ if __name__ == "__main__":
         var_names = [r"$\beta$", r"$h_{i_{0}}$", r"$\eta_i$"]
 
         posterior = get_posterior(vars, [snow, np.ones_like(ice)], ice)
-        argmax, unravel_argmax, vars_max, probs_mar, std_max = get_stats(
+        argmax, prob_max, unravel_argmax, vars_max, probs_mar, std_mar, prob_null = get_stats(
             posterior, vars, null_dims=[0], problem="Ice",
         )
+        stats_info(vars_max, std_mar, prob_max, prob_null,
+            site=site, problem="Ice", log_path=log_path)
+        save_param(vars_max, std_mar, var_names, site, problem="Ice")
 
         plot_linear_dependency(
             "ice",
@@ -287,9 +358,12 @@ if __name__ == "__main__":
         )
         # In this case, the null hypothesis is neither ice nor snow having an
         # effect on vv.
-        argmax, unravel_argmax, vars_max, probs_mar, std_max = get_stats(
+        argmax, prob_max, unravel_argmax, vars_max, probs_mar, std_mar, prob_null = get_stats(
             posterior, vars, null_dims=[0, 1], problem="VV",
         )
+        stats_info(vars_max, std_mar, prob_max, prob_null,
+            site=site, problem="VV", log_path=log_path)
+        save_param(vars_max, std_mar, var_names, site, problem="VV")
 
         vv_snow_dep, vv_ice_dep, vv_0, vv_noise = vars_max
         plot_linear_dependency(

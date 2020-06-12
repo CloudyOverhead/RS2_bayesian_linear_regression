@@ -9,15 +9,13 @@ import pandas as pd
 from process_bathymetry import load_bathymetry
 
 DATA_PATH = "data"
-FIGURE_PATH = "figures"
 ANGLE_SITE = {
     'S': 3*np.pi/4,
     'D': np.pi/4,
     'K': -np.pi/8,
 }
 
-
-def read_data(site, year, remove_jan=True, remove_apr=False, normalize=True):
+def read_data(site, year, season=0, normalize=True):
     files = listdir(DATA_PATH)
     files = [
         file for file in files
@@ -29,17 +27,17 @@ def read_data(site, year, remove_jan=True, remove_apr=False, normalize=True):
         and "distance" not in file
         and year in file
     ]
-    if remove_jan:
+    if season == "jan":
         files = [
             file for file in files
-            if re.match(".*[0-9]{4}(01|02)[0-9]{2}.*", file) is None
+            if re.match(".*[0-9]{4}(01|02)[0-9]{2}.*", file)
         ]
-    if remove_apr:
+    elif season == "apr":
         files = [
             file for file in files
-            if re.match(".*[0-9]{4}(04|05)[0-9]{2}.*", file) is None
+            if re.match(".*[0-9]{4}(04|05)[0-9]{2}.*", file)
         ]
-    print(files)
+
     data = [
         pd.read_csv(
             join(DATA_PATH, file),
@@ -64,7 +62,7 @@ def read_data(site, year, remove_jan=True, remove_apr=False, normalize=True):
 
     data = data.loc[~np.isnan(data["ice"])]
 
-    return data
+    return data, files
 
 
 def correct_transform(site, transform, ind):
@@ -122,19 +120,22 @@ def compute_wind_shore_product(site, center, y, x):
     return product
 
 
-def get_variables(year=0, plot=False):
+def get_variables(year=0, season=0, plot=False):
     files = [
         file for file in listdir(DATA_PATH)
         if "bathymetry" in file and file[-3:] == 'tif'
     ]
     for site in ["S", "D", "K"]:
-        if (year == "2016") & (site == "S"):
-            # print(" january")
+        if (site == "S") & (year == "2016") & (season != "jan"):
             continue
+        print(site)
+        print(year)
+        print(season)
+        print(files)
         file_path = [file for file in files if (site in file)][0]
         _, transform = load_bathymetry(join(DATA_PATH, file_path))
         velocity = np.load(join(DATA_PATH, f"{site}_velocity.npy"))
-        data = read_data(site, year)
+        data, data_files = read_data(site, year, season)
         # data = reads_data(site, year, remove_apr=True, remove_jan=False)
         x_data, y_data, ice, snow, vv = [
             col for _, col in data.iteritems()
@@ -196,7 +197,7 @@ def get_variables(year=0, plot=False):
             plt.savefig(join(FIGURE_PATH, f"{site}_loc"))
             plt.show()
 
-        yield site, data
+        yield site, data, data_files
 
 
 if __name__ == "__main__":
