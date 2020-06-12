@@ -131,7 +131,6 @@ def get_variables(year=0, season=0, plot=False):
         print(site)
         print(year)
         print(season)
-        print(files)
         file_path = [file for file in files if (site in file)][0]
         _, transform = load_bathymetry(join(DATA_PATH, file_path))
         velocity = np.load(join(DATA_PATH, f"{site}_velocity.npy"))
