@@ -10,10 +10,9 @@ import sys
 
 from prepare_variables import get_variables
 
-YEAR = "2016"
-SEASON = "apr" # jan or apr or 0
+YEAR = "2018"
+SEASON = "jan" # jan or apr or 0
 FIGURE_PATH = "figures"
-LOG = 1
 
 def pairplots(site, data, products):
     data = np.concatenate(
@@ -126,13 +125,14 @@ def init_log(site, YEAR, SEASON, files):
 
     return log_path
 
+""" Reduces the posterior probability of a model to the special null hypothesis
+case where one or more of its parameters are set to zero. Returns the max."""
 def get_prob_null(posterior, vars, null_dims):
     for dim in sorted(null_dims)[::-1]:
         posterior = np.moveaxis(posterior, dim, -1)
         idx_null = np.argmin(np.abs(vars[dim]))
         posterior = posterior[..., idx_null]
     return posterior.max()
-
 
 def weighted_std(values, weights):
     average = np.average(values, weights=weights)
@@ -338,7 +338,6 @@ if __name__ == "__main__":
         plot_parameters(site, "ice", vars, var_names, probs_mar)
 
         """VV"""
-
         vv_snow_dep = np.linspace(-2, 1.5, STEPS/2)
         vv_ice_dep = np.linspace(-2, 1.5, STEPS/2)
         vv_0 = np.linspace(-1, 1, STEPS/2)
