@@ -11,7 +11,7 @@ import sys
 from prepare_variables import get_variables
 
 YEAR = "2018"
-SEASON = "apr" # jan or apr or 0
+SEASON = "jan" # jan or apr or 0
 FIGURE_PATH = "figures"
 
 def pairplots(site, data, products):
@@ -277,115 +277,115 @@ if __name__ == "__main__":
 
         snow, ice, wind, vv = data[["snow", "ice", "wind", "VV"]].values.T
 
-        """Snow"""
-
-        product_dep = np.linspace(-.1, .5, STEPS)
-        snow_0 = np.linspace(-1, 1, STEPS)
-        snow_noise = np.logspace(-.5, 0.5, STEPS)
-        vars = [product_dep, snow_0, snow_noise]
-        var_names = [r"$\alpha$", r"$h_{s_{0}}$", r"$\eta_s$"]
-
-        posterior = get_posterior(vars, [wind, np.ones_like(snow)], snow)
-        argmax, prob_max, unravel_argmax, vars_max, probs_mar, std_mar, prob_null = get_stats(
-            posterior, vars, null_dims=[0], problem="Snow",
-        )
-        # stats_info(vars_max, std_mar, prob_max, prob_null,
-            # site=site, problem="Snow", log_path=log_path)
-        save_param(vars_max, std_mar, var_names, site, problem="Snow")
-
-        plot_linear_dependency(
-            "snow",
-            wind,
-            snow,
-            *vars_max,
-            xlabel="Wind dependency",
-            ylabel="Snow",
-        )
-        export_xy(
-            "snow",
-            wind,
-            snow,
-            *vars_max,
-            xlabel="Wind dependency",
-            ylabel="Snow",
-        )
-        plot_parameters(site, "snow", vars, var_names, probs_mar)
-
-        """Ice"""
-
-        snow_dep = np.linspace(-1.5, 1, STEPS)
-        ice_0 = np.linspace(-1, 1, STEPS)
-        ice_noise = np.logspace(-.5, 1, STEPS)
-        vars = [snow_dep, ice_0, ice_noise]
-        var_names = [r"$\beta$", r"$h_{i_{0}}$", r"$\eta_i$"]
-
-        posterior = get_posterior(vars, [snow, np.ones_like(ice)], ice)
-        argmax, prob_max, unravel_argmax, vars_max, probs_mar, std_mar, prob_null = get_stats(
-            posterior, vars, null_dims=[0], problem="Ice",
-        )
-        # stats_info(vars_max, std_mar, prob_max, prob_null,
-            # site=site, problem="Ice", log_path=log_path)
-        save_param(vars_max, std_mar, var_names, site, problem="Ice")
-
-        plot_linear_dependency(
-            "ice",
-            snow,
-            ice,
-            *vars_max,
-            xlabel="Snow",
-            ylabel="Ice",
-        )
-        plot_parameters(site, "ice", vars, var_names, probs_mar)
-
-        """VV"""
-        vv_snow_dep = np.linspace(-2, 1.5, STEPS/2)
-        vv_ice_dep = np.linspace(-2, 1.5, STEPS/2)
-        vv_0 = np.linspace(-1, 1, STEPS/2)
-        vv_noise = np.logspace(-.5, 1, STEPS/2)
-        vars = [vv_snow_dep, vv_ice_dep, vv_0, vv_noise]
-        var_names = [
-            r"$\gamma$",
-            r"$\delta$",
-            r"$\sigma_{VV~0}$",
-            r"$\eta_{\sigma_{VV}}$",
-        ]
-
-        posterior = get_posterior(
-            vars,
-            [snow, ice, np.ones_like(vv)],
-            vv,
-        )
-        # In this case, the null hypothesis is neither ice nor snow having an
-        # effect on vv.
-        argmax, prob_max, unravel_argmax, vars_max, probs_mar, std_mar, prob_null = get_stats(
-            posterior, vars, null_dims=[0, 1], problem="VV",
-        )
-        # stats_info(vars_max, std_mar, prob_max, prob_null,
-            # site=site, problem="VV", log_path=log_path)
-        save_param(vars_max, std_mar, var_names, site, problem="VV")
-
-        vv_snow_dep, vv_ice_dep, vv_0, vv_noise = vars_max
-        plot_linear_dependency(
-            "vv_to_snow",
-            snow,
-            vv-vv_ice_dep*ice,
-            a=vv_snow_dep,
-            b=vv_0,
-            std=vv_noise,
-            xlabel="Snow",
-            ylabel=r"$\sigma_{VV}$ - Ice dependency * Ice",
-        )
-        plot_linear_dependency(
-            "vv_to_ice",
-            ice,
-            vv-vv_snow_dep*snow,
-            a=vv_ice_dep,
-            b=vv_0,
-            std=vv_noise,
-            xlabel="Ice",
-            ylabel=r"$\sigma_{VV}$ - Snow dependency * Snow",
-        )
-        plot_parameters(site, "vv", vars, var_names, probs_mar)
+        # """Snow"""
+        #
+        # product_dep = np.linspace(-.1, .5, STEPS)
+        # snow_0 = np.linspace(-1, 1, STEPS)
+        # snow_noise = np.logspace(-.5, 0.5, STEPS)
+        # vars = [product_dep, snow_0, snow_noise]
+        # var_names = [r"$\alpha$", r"$h_{s_{0}}$", r"$\eta_s$"]
+        #
+        # posterior = get_posterior(vars, [wind, np.ones_like(snow)], snow)
+        # argmax, prob_max, unravel_argmax, vars_max, probs_mar, std_mar, prob_null = get_stats(
+        #     posterior, vars, null_dims=[0], problem="Snow",
+        # )
+        # # stats_info(vars_max, std_mar, prob_max, prob_null,
+        #     # site=site, problem="Snow", log_path=log_path)
+        # save_param(vars_max, std_mar, var_names, site, problem="Snow")
+        #
+        # plot_linear_dependency(
+        #     "snow",
+        #     wind,
+        #     snow,
+        #     *vars_max,
+        #     xlabel="Wind dependency",
+        #     ylabel="Snow",
+        # )
+        # export_xy(
+        #     "snow",
+        #     wind,
+        #     snow,
+        #     *vars_max,
+        #     xlabel="Wind dependency",
+        #     ylabel="Snow",
+        # )
+        # plot_parameters(site, "snow", vars, var_names, probs_mar)
+        #
+        # """Ice"""
+        #
+        # snow_dep = np.linspace(-1.5, 1, STEPS)
+        # ice_0 = np.linspace(-1, 1, STEPS)
+        # ice_noise = np.logspace(-.5, 1, STEPS)
+        # vars = [snow_dep, ice_0, ice_noise]
+        # var_names = [r"$\beta$", r"$h_{i_{0}}$", r"$\eta_i$"]
+        #
+        # posterior = get_posterior(vars, [snow, np.ones_like(ice)], ice)
+        # argmax, prob_max, unravel_argmax, vars_max, probs_mar, std_mar, prob_null = get_stats(
+        #     posterior, vars, null_dims=[0], problem="Ice",
+        # )
+        # # stats_info(vars_max, std_mar, prob_max, prob_null,
+        #     # site=site, problem="Ice", log_path=log_path)
+        # save_param(vars_max, std_mar, var_names, site, problem="Ice")
+        #
+        # plot_linear_dependency(
+        #     "ice",
+        #     snow,
+        #     ice,
+        #     *vars_max,
+        #     xlabel="Snow",
+        #     ylabel="Ice",
+        # )
+        # plot_parameters(site, "ice", vars, var_names, probs_mar)
+        #
+        # """VV"""
+        # vv_snow_dep = np.linspace(-2, 1.5, STEPS/2)
+        # vv_ice_dep = np.linspace(-2, 1.5, STEPS/2)
+        # vv_0 = np.linspace(-1, 1, STEPS/2)
+        # vv_noise = np.logspace(-.5, 1, STEPS/2)
+        # vars = [vv_snow_dep, vv_ice_dep, vv_0, vv_noise]
+        # var_names = [
+        #     r"$\gamma$",
+        #     r"$\delta$",
+        #     r"$\sigma_{VV~0}$",
+        #     r"$\eta_{\sigma_{VV}}$",
+        # ]
+        #
+        # posterior = get_posterior(
+        #     vars,
+        #     [snow, ice, np.ones_like(vv)],
+        #     vv,
+        # )
+        # # In this case, the null hypothesis is neither ice nor snow having an
+        # # effect on vv.
+        # argmax, prob_max, unravel_argmax, vars_max, probs_mar, std_mar, prob_null = get_stats(
+        #     posterior, vars, null_dims=[0, 1], problem="VV",
+        # )
+        # # stats_info(vars_max, std_mar, prob_max, prob_null,
+        #     # site=site, problem="VV", log_path=log_path)
+        # save_param(vars_max, std_mar, var_names, site, problem="VV")
+        #
+        # vv_snow_dep, vv_ice_dep, vv_0, vv_noise = vars_max
+        # plot_linear_dependency(
+        #     "vv_to_snow",
+        #     snow,
+        #     vv-vv_ice_dep*ice,
+        #     a=vv_snow_dep,
+        #     b=vv_0,
+        #     std=vv_noise,
+        #     xlabel="Snow",
+        #     ylabel=r"$\sigma_{VV}$ - Ice dependency * Ice",
+        # )
+        # plot_linear_dependency(
+        #     "vv_to_ice",
+        #     ice,
+        #     vv-vv_snow_dep*snow,
+        #     a=vv_ice_dep,
+        #     b=vv_0,
+        #     std=vv_noise,
+        #     xlabel="Ice",
+        #     ylabel=r"$\sigma_{VV}$ - Snow dependency * Snow",
+        # )
+        # plot_parameters(site, "vv", vars, var_names, probs_mar)
 
         """ VV H1A, H1B """
         vv_snow_dep = np.linspace(-2, 1.5, STEPS/2)

@@ -42,7 +42,7 @@ def read_data(site, year, season=0, normalize=True):
         pd.read_csv(
             join(DATA_PATH, file),
             comment='#',
-        )
+        ).dropna()
         for file in files
     ]
 
@@ -127,6 +127,8 @@ def get_variables(year=0, season=0, plot=False):
     ]
     for site in ["S", "D", "K"]:
         if (site == "S") & (year == "2016") & (season != "jan"):
+            continue
+        if ("orbit" in DATA_PATH) & (site != "D"):
             continue
         print(site)
         print(year)

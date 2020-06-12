@@ -4,3 +4,4 @@ figures/*
 .DS_Store
 __pycache__/
 data_analyzed/
+data_orbit21/
