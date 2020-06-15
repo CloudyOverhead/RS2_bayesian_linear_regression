@@ -10,9 +10,13 @@ import sys
 
 from prepare_variables import get_variables
 
-YEAR = "2018"
-SEASON = "jan" # jan or apr or 0
-FIGURE_PATH = "figures"
+YEAR = "2016"
+SEASON = "apr" # jan or apr or 0
+DATA_PATH = "data_orbit21"
+if "orbit21" in DATA_PATH:
+    FIGURE_PATH = "figures/orbit21"
+else:
+    FIGURE_PATH = "figures/C-band"
 
 def pairplots(site, data, products):
     data = np.concatenate(
@@ -56,8 +60,8 @@ def get_posterior(vars, xs, y):
 
     return posterior
 
-
-def get_stats(posterior, vars, null_dims, print_=True, problem=None):
+"""From posterior and vars, return max posterior and mean + std of vars at max_prob"""
+def get_stats(posterior, vars, print_=True, problem=None):
     # Maximum posterior probability
     argmax = np.argmax(posterior)
     prob_max = posterior.flatten()[argmax]
@@ -66,19 +70,9 @@ def get_stats(posterior, vars, null_dims, print_=True, problem=None):
     vars_max = [var[unravel_argmax[i]] for i, var in enumerate(vars)]
     probs_mar = marginal_distributions(unravel_argmax, posterior)
     std_mar = [weighted_std(var, prob) for var, prob in zip(vars, probs_mar)]
-    # prob_uniform = posterior.mean()
 
-    # Maximum posterior probability for the null hypothesis (same model with null_dims)
-    prob_null = get_prob_null(posterior, vars, null_dims)
+    return prob_max, vars_max, probs_mar, std_mar
 
-    # if print_:
-    #     print(" "*3, f"{problem}:")
-    #     print(" "*7, "Best fit mean:", ["{:.3f}".format(x) for x in vars_max])
-    #     print(" "*7, "Best fit std:", ["{:.3f}".format(x) for x in std_mar])
-    #     # print(" "*7, "Rapport à l'uniforme:", prob_max / prob_uniform)
-    #     print(" "*7, "Rapport à l'hypothèse nulle:", "{:.0f}".format(prob_max / prob_null), ", ({:.0E})".format(prob_max / prob_null))
-
-    return argmax, prob_max, unravel_argmax, vars_max, probs_mar, std_mar, prob_null
 
 """Print stats info to console and save as text file"""
 def stats_info(vars_max, std_mar, prob_max, prob_null, site, problem, log_path=0):
@@ -133,6 +127,15 @@ def get_prob_null(posterior, vars, null_dims):
         idx_null = np.argmin(np.abs(vars[dim]))
         posterior = posterior[..., idx_null]
     return posterior.max()
+
+""" Reduces the posterior probability of a model to the special null hypothesis
+case where one or more of its parameters are set to zero."""
+def get_null_posterior(posterior, vars, null_dims):
+    for dim in sorted(null_dims)[::-1]:
+        posterior = np.moveaxis(posterior, dim, -1)
+        idx_null = np.argmin(np.abs(vars[dim]))
+        posterior = posterior[..., idx_null]
+    return posterior
 
 def weighted_std(values, weights):
     average = np.average(values, weights=weights)
@@ -264,130 +267,115 @@ def plot_parameters(site, problem, vars, var_names, probs_mar):
     # plt.show()
     plt.close()
 
+def plot_ratio_matrix(site, problem, ratio_matrix):
+    fig = plt.figure(figsize=(3.5,3.5))
+    mpl.rcParams["font.family"] = "Arial"
+    fig.subplots_adjust(left=0.1, right=0.95, bottom=0.2, top=0.92, hspace=0.2, wspace=0.2) # adjust the box of axes regarding the figure size
+    ax = fig.axes
+
+    # Mask out bayes factor < 10^0.5
+    log_ratio_matrix = np.log10(ratio_matrix)
+    mask = np.zeros_like(ratio_matrix)
+    for i in np.arange(len(mask[0,:])):
+        for j in np.arange(len(mask[:,0])):
+            if i>j:
+                mask[i,j] = True
+    log_ratio_matrix[np.abs(log_ratio_matrix) < 0.5] = 0
+    ax = sns.heatmap(log_ratio_matrix, mask=mask, vmin=-5, vmax=5, cmap="PRGn",linewidths=0.5)
+
+    save_name = f"Ratio_matrix_{problem}_{site}"
+    if YEAR:
+        save_name += f"_{YEAR}"
+    if SEASON:
+        save_name += f"_{SEASON}"
+
+    labels = [r"$p_{H_{0}}$",r"$p_{H_{1A}}$",r"$p_{H_{1B}}$",r"$p_{H_{2}}$"]
+    ax.set_xticklabels(labels)
+    ax.xaxis.tick_top()
+    ax.set_yticklabels(labels)
+    ax.tick_params(which=u'both',length=0)
+
+    fig.savefig(join(FIGURE_PATH, save_name),transparent=False, dpi=300)
+    # plt.show()
+    plt.close()
+
 if __name__ == "__main__":
     STEPS = 64  # NOTE Reduce step size to make computations faster.
     if (YEAR == "2016") & (SEASON != "apr"):
         print("Not enough data for all year 2016 or jan 2016")
         sys.exit()
 
-    for site, data, data_files in get_variables(year=YEAR, season=SEASON):
+    for site, data, data_files in get_variables(data_path=DATA_PATH, year=YEAR, season=SEASON):
 
         print(f"Site {site}")
         log_path = init_log(site, YEAR, SEASON, data_files)
 
         snow, ice, wind, vv = data[["snow", "ice", "wind", "VV"]].values.T
 
-        # """Snow"""
-        #
-        # product_dep = np.linspace(-.1, .5, STEPS)
-        # snow_0 = np.linspace(-1, 1, STEPS)
-        # snow_noise = np.logspace(-.5, 0.5, STEPS)
-        # vars = [product_dep, snow_0, snow_noise]
-        # var_names = [r"$\alpha$", r"$h_{s_{0}}$", r"$\eta_s$"]
-        #
-        # posterior = get_posterior(vars, [wind, np.ones_like(snow)], snow)
-        # argmax, prob_max, unravel_argmax, vars_max, probs_mar, std_mar, prob_null = get_stats(
-        #     posterior, vars, null_dims=[0], problem="Snow",
-        # )
-        # # stats_info(vars_max, std_mar, prob_max, prob_null,
-        #     # site=site, problem="Snow", log_path=log_path)
-        # save_param(vars_max, std_mar, var_names, site, problem="Snow")
-        #
-        # plot_linear_dependency(
-        #     "snow",
-        #     wind,
-        #     snow,
-        #     *vars_max,
-        #     xlabel="Wind dependency",
-        #     ylabel="Snow",
-        # )
-        # export_xy(
-        #     "snow",
-        #     wind,
-        #     snow,
-        #     *vars_max,
-        #     xlabel="Wind dependency",
-        #     ylabel="Snow",
-        # )
-        # plot_parameters(site, "snow", vars, var_names, probs_mar)
-        #
-        # """Ice"""
-        #
-        # snow_dep = np.linspace(-1.5, 1, STEPS)
-        # ice_0 = np.linspace(-1, 1, STEPS)
-        # ice_noise = np.logspace(-.5, 1, STEPS)
-        # vars = [snow_dep, ice_0, ice_noise]
-        # var_names = [r"$\beta$", r"$h_{i_{0}}$", r"$\eta_i$"]
-        #
-        # posterior = get_posterior(vars, [snow, np.ones_like(ice)], ice)
-        # argmax, prob_max, unravel_argmax, vars_max, probs_mar, std_mar, prob_null = get_stats(
-        #     posterior, vars, null_dims=[0], problem="Ice",
-        # )
-        # # stats_info(vars_max, std_mar, prob_max, prob_null,
-        #     # site=site, problem="Ice", log_path=log_path)
-        # save_param(vars_max, std_mar, var_names, site, problem="Ice")
-        #
-        # plot_linear_dependency(
-        #     "ice",
-        #     snow,
-        #     ice,
-        #     *vars_max,
-        #     xlabel="Snow",
-        #     ylabel="Ice",
-        # )
-        # plot_parameters(site, "ice", vars, var_names, probs_mar)
-        #
-        # """VV"""
-        # vv_snow_dep = np.linspace(-2, 1.5, STEPS/2)
-        # vv_ice_dep = np.linspace(-2, 1.5, STEPS/2)
-        # vv_0 = np.linspace(-1, 1, STEPS/2)
-        # vv_noise = np.logspace(-.5, 1, STEPS/2)
-        # vars = [vv_snow_dep, vv_ice_dep, vv_0, vv_noise]
-        # var_names = [
-        #     r"$\gamma$",
-        #     r"$\delta$",
-        #     r"$\sigma_{VV~0}$",
-        #     r"$\eta_{\sigma_{VV}}$",
-        # ]
-        #
-        # posterior = get_posterior(
-        #     vars,
-        #     [snow, ice, np.ones_like(vv)],
-        #     vv,
-        # )
-        # # In this case, the null hypothesis is neither ice nor snow having an
-        # # effect on vv.
-        # argmax, prob_max, unravel_argmax, vars_max, probs_mar, std_mar, prob_null = get_stats(
-        #     posterior, vars, null_dims=[0, 1], problem="VV",
-        # )
-        # # stats_info(vars_max, std_mar, prob_max, prob_null,
-        #     # site=site, problem="VV", log_path=log_path)
-        # save_param(vars_max, std_mar, var_names, site, problem="VV")
-        #
-        # vv_snow_dep, vv_ice_dep, vv_0, vv_noise = vars_max
-        # plot_linear_dependency(
-        #     "vv_to_snow",
-        #     snow,
-        #     vv-vv_ice_dep*ice,
-        #     a=vv_snow_dep,
-        #     b=vv_0,
-        #     std=vv_noise,
-        #     xlabel="Snow",
-        #     ylabel=r"$\sigma_{VV}$ - Ice dependency * Ice",
-        # )
-        # plot_linear_dependency(
-        #     "vv_to_ice",
-        #     ice,
-        #     vv-vv_snow_dep*snow,
-        #     a=vv_ice_dep,
-        #     b=vv_0,
-        #     std=vv_noise,
-        #     xlabel="Ice",
-        #     ylabel=r"$\sigma_{VV}$ - Snow dependency * Snow",
-        # )
-        # plot_parameters(site, "vv", vars, var_names, probs_mar)
+        """Snow"""
 
-        """ VV H1A, H1B """
+        product_dep = np.linspace(-.1, .5, STEPS)
+        snow_0 = np.linspace(-1, 1, STEPS)
+        snow_noise = np.logspace(-.5, 0.5, STEPS)
+        vars = [product_dep, snow_0, snow_noise]
+        var_names = [r"$\alpha$", r"$h_{s_{0}}$", r"$\eta_s$"]
+
+        posterior = get_posterior(vars, [wind, np.ones_like(snow)], snow)
+        prob_max, vars_max, probs_mar, std_mar = get_stats(
+            posterior, vars, problem="Snow",
+        )
+        prob_null = get_null_posterior(posterior, vars, null_dims=[0]).max()
+        stats_info(vars_max, std_mar, prob_max, prob_null,
+            site=site, problem="Snow", log_path=log_path)
+        save_param(vars_max, std_mar, var_names, site, problem="Snow")
+
+        plot_linear_dependency(
+            "snow",
+            wind,
+            snow,
+            *vars_max,
+            xlabel="Wind dependency",
+            ylabel="Snow",
+        )
+        export_xy(
+            "snow",
+            wind,
+            snow,
+            *vars_max,
+            xlabel="Wind dependency",
+            ylabel="Snow",
+        )
+        plot_parameters(site, "snow", vars, var_names, probs_mar)
+
+        """Ice"""
+        snow_dep = np.linspace(-1.5, 1, STEPS)
+        ice_0 = np.linspace(-1, 1, STEPS)
+        ice_noise = np.logspace(-.5, 1, STEPS)
+        vars = [snow_dep, ice_0, ice_noise]
+        var_names = [r"$\beta$", r"$h_{i_{0}}$", r"$\eta_i$"]
+
+        # Max posterior
+        posterior = get_posterior(vars, [snow, np.ones_like(ice)], ice)
+        prob_max, vars_max, probs_mar, std_mar = get_stats(
+            posterior, vars, problem="Ice",
+        )
+        prob_null = get_null_posterior(posterior, vars, null_dims=[0]).max()
+        stats_info(vars_max, std_mar, prob_max, prob_null,
+            site=site, problem="Ice", log_path=log_path)
+        save_param(vars_max, std_mar, var_names, site, problem="Ice")
+
+        plot_linear_dependency(
+            "ice",
+            snow,
+            ice,
+            *vars_max,
+            xlabel="Snow",
+            ylabel="Ice",
+        )
+        plot_parameters(site, "ice", vars, var_names, probs_mar)
+
+
+        """ VV H2, H1A, H1B """
         vv_snow_dep = np.linspace(-2, 1.5, STEPS/2)
         vv_ice_dep = np.linspace(-2, 1.5, STEPS/2)
         vv_0 = np.linspace(-1, 1, STEPS/2)
@@ -406,26 +394,62 @@ if __name__ == "__main__":
             [snow, ice, np.ones_like(vv)],
             vv,
         )
-        H2_prob_max = posterior.max()
+        H2_prob_max, H2_vars_max, H2_probs_mar, H2_std_mar = get_stats(
+                posterior, vars, problem="H2")
+        save_param(H2_vars_max, H2_std_mar, var_names, site, problem="H2")
+        plot_parameters(site, "H2", vars, var_names, H2_probs_mar)
+
+        # Max posterior for H0:
+        H0_posterior = get_null_posterior(posterior, vars, null_dims=[0,1])
+        H0_vars = [x for i, x in enumerate(vars) if i >=2]
+        H0_var_names = [x for i, x in enumerate(var_names) if i >=2]
+        H0_prob_max, H0_vars_max, H0_probs_mar, H0_std_mar = get_stats(
+                H0_posterior, H0_vars, problem="H0")
+        save_param(H0_vars_max, H0_std_mar, H0_var_names, site, problem="H0")
+        plot_parameters(site, "H0", H0_vars, H0_var_names, H0_probs_mar)
 
         # Max posterior for H1A:
-        H1A_prob_max = get_prob_null(posterior, vars, null_dims=[1])
+        H1A_posterior = get_null_posterior(posterior, vars, null_dims=[1])
+        H1A_vars = [x for i, x in enumerate(vars) if i !=1]
+        H1A_var_names = [x for i, x in enumerate(var_names) if i !=1]
+        H1A_prob_max, H1A_vars_max, H1A_probs_mar, H1A_std_mar = get_stats(
+                H1A_posterior, H1A_vars, problem="H1A")
+        save_param(H1A_vars_max, H1A_std_mar, H1A_var_names, site, problem="H1A")
+        plot_parameters(site, "H1A", H1A_vars, H1A_var_names, H1A_probs_mar)
+
         # Max posterior for H1B:
-        H1B_prob_max = get_prob_null(posterior, vars, null_dims=[0])
-        # Max posterior for H0:
-        H0_prob_max = get_prob_null(posterior, vars, null_dims=[0,1])
+        H1B_posterior = get_null_posterior(posterior, vars, null_dims=[0])
+        H1B_vars = [x for i, x in enumerate(vars) if i !=0]
+        H1B_var_names = [x for i, x in enumerate(var_names) if i !=0]
+        H1B_prob_max, H1B_vars_max, H1B_probs_mar, H1B_std_mar = get_stats(
+                H1B_posterior, H1B_vars, problem="H1B")
+        save_param(H1B_vars_max, H1B_std_mar, H1B_var_names, site, problem="H1B")
+        plot_parameters(site, "H1B", H1B_vars, H1B_var_names, H1B_probs_mar)
 
-        print("H1A = snow, H1B = ice, H2 = both")
-        K = H1A_prob_max/H0_prob_max
-        print("P(H1A|D)P(H0|D) = {:.0f}".format(K)+ " ({:.0E})".format(K))
-        K = H1B_prob_max/H0_prob_max
-        print("P(H1B|D)P(H0|D) = {:.0f}".format(K)+ " ({:.0E})".format(K))
-        K = H1B_prob_max/H1A_prob_max
-        print("P(H1B|D)P(H1A|D) = {:.0f}".format(K)+ " ({:.0E})".format(K))
+        # Save prob ratios and stats
+        stats_info(H2_vars_max, H2_std_mar, H2_prob_max, H0_prob_max,
+            site=site, problem="H2_v_H0", log_path=log_path)
+        stats_info(H2_vars_max, H2_std_mar, H2_prob_max, H1A_prob_max,
+            site=site, problem="H2_v_H1A", log_path=log_path)
+        stats_info(H2_vars_max, H2_std_mar, H2_prob_max, H1B_prob_max,
+            site=site, problem="H2_v_H1B", log_path=log_path)
 
-        K = H2_prob_max/H0_prob_max
-        print("P(H2|D)P(H0|D) = {:.0f}".format(K)+ " ({:.0E})".format(K))
-        K = H2_prob_max/H1A_prob_max
-        print("P(H2|D)P(H1A|D) = {:.0f}".format(K)+ " ({:.0E})".format(K))
-        K = H2_prob_max/H1B_prob_max
-        print("P(H2|D)P(H1B|D) = {:.0f}".format(K)+ " ({:.0E})".format(K))
+        stats_info(H1A_vars_max, H1A_std_mar, H1A_prob_max, H0_prob_max,
+            site=site, problem="H1A_v_H0", log_path=log_path)
+        stats_info(H1A_vars_max, H1A_std_mar, H1A_prob_max, H1B_prob_max,
+            site=site, problem="H1A_v_H1B", log_path=log_path)
+
+        stats_info(H1B_vars_max, H1B_std_mar, H1B_prob_max, H0_prob_max,
+            site=site, problem="H1B_v_H0", log_path=log_path)
+        stats_info(H1B_vars_max, H1B_std_mar, H1B_prob_max, H1A_prob_max,
+            site=site, problem="H1B_v_H1A", log_path=log_path)
+
+        stats_info(H0_vars_max, H0_std_mar, H0_prob_max, H0_prob_max,
+            site=site, problem="H0", log_path=log_path)
+
+        # As matrix
+        prob_vector = [H0_prob_max, H1A_prob_max, H1B_prob_max, H2_prob_max]
+        ratio_matrix = np.zeros([len(prob_vector), len(prob_vector)])
+        for i in np.arange(len(prob_vector)):
+            ratio_matrix[i,:] = prob_vector/prob_vector[i]
+        plot_ratio_matrix(site, "VV", ratio_matrix)

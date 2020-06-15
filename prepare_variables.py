@@ -8,15 +8,14 @@ import pandas as pd
 
 from process_bathymetry import load_bathymetry
 
-DATA_PATH = "data"
 ANGLE_SITE = {
     'S': 3*np.pi/4,
     'D': np.pi/4,
     'K': -np.pi/8,
 }
 
-def read_data(site, year, season=0, normalize=True):
-    files = listdir(DATA_PATH)
+def read_data(data_path, site, year, season=0, normalize=True):
+    files = listdir(data_path)
     files = [
         file for file in files
         if '.csv' in file
@@ -40,7 +39,7 @@ def read_data(site, year, season=0, normalize=True):
 
     data = [
         pd.read_csv(
-            join(DATA_PATH, file),
+            join(data_path, file),
             comment='#',
         ).dropna()
         for file in files
@@ -120,23 +119,23 @@ def compute_wind_shore_product(site, center, y, x):
     return product
 
 
-def get_variables(year=0, season=0, plot=False):
+def get_variables(data_path, year=0, season=0, plot=False):
     files = [
-        file for file in listdir(DATA_PATH)
+        file for file in listdir(data_path)
         if "bathymetry" in file and file[-3:] == 'tif'
     ]
     for site in ["S", "D", "K"]:
         if (site == "S") & (year == "2016") & (season != "jan"):
             continue
-        if ("orbit" in DATA_PATH) & (site != "D"):
+        if ("orbit" in data_path) & (site != "D"):
             continue
         print(site)
         print(year)
         print(season)
         file_path = [file for file in files if (site in file)][0]
-        _, transform = load_bathymetry(join(DATA_PATH, file_path))
-        velocity = np.load(join(DATA_PATH, f"{site}_velocity.npy"))
-        data, data_files = read_data(site, year, season)
+        _, transform = load_bathymetry(join(data_path, file_path))
+        velocity = np.load(join(data_path, f"{site}_velocity.npy"))
+        data, data_files = read_data(data_path, site, year, season)
         # data = reads_data(site, year, remove_apr=True, remove_jan=False)
         x_data, y_data, ice, snow, vv = [
             col for _, col in data.iteritems()
@@ -158,7 +157,7 @@ def get_variables(year=0, season=0, plot=False):
         data.loc[np.isnan(data["velocity"]), "velocity"] = 0
 
         center = np.loadtxt(
-            join(DATA_PATH, f"{site}_distance_to_shore_raw.csv"),
+            join(data_path, f"{site}_distance_to_shore_raw.csv"),
             skiprows=1,
             delimiter=',',
             usecols=[1, 2],
