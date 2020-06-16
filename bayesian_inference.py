@@ -270,6 +270,7 @@ def plot_parameters(site, problem, vars, var_names, probs_mar):
 def plot_ratio_matrix(site, problem, ratio_matrix):
     fig = plt.figure(figsize=(3.5,3.5))
     mpl.rcParams["font.family"] = "Arial"
+    mpl.rcParams["font.size"] = 12
     fig.subplots_adjust(left=0.1, right=0.95, bottom=0.2, top=0.92, hspace=0.2, wspace=0.2) # adjust the box of axes regarding the figure size
     ax = fig.axes
 
@@ -281,7 +282,11 @@ def plot_ratio_matrix(site, problem, ratio_matrix):
             if i>j:
                 mask[i,j] = True
     log_ratio_matrix[np.abs(log_ratio_matrix) < 0.5] = 0
-    ax = sns.heatmap(log_ratio_matrix, mask=mask, vmin=-5, vmax=5, cmap="PRGn",linewidths=0.5)
+    if "orbit21" in DATA_PATH:
+        cmap = "PRGn"
+    else:
+        cmap = "PRGn"
+    ax = sns.heatmap(log_ratio_matrix, mask=mask, vmin=-5, vmax=5, cmap=cmap,linewidths=0.5)
 
     save_name = f"Ratio_matrix_{problem}_{site}"
     if YEAR:
