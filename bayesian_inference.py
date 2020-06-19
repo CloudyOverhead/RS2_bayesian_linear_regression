@@ -12,27 +12,17 @@ from prepare_variables import get_variables
 
 YEAR = "2016"
 SEASON = "apr" # jan or apr or 0
-DATA_PATH = "data_orbit21"
+DATA_PATH = "data"
 if "orbit21" in DATA_PATH:
     FIGURE_PATH = "figures/orbit21"
 else:
     FIGURE_PATH = "figures/C-band"
 
-def pairplots(site, data, products):
-    data = np.concatenate(
-        [
-            data.values[:, [2, 3]],
-            products[:, None],
-            data.values[:, 4],
-        ],
-        axis=1,
-    )
-    sns.pairplot(
-        pd.DataFrame(data, columns=["ice", "snow", "wind", "vv"])
-    )
-    # plt.show()
-
-
+"""
+vars = parameter values, list of 1d arrays covering the hypothesis space
+xs = data x_i plus an array of ones
+y = data y
+"""
 def get_posterior(vars, xs, y):
     *as_, std = vars
     n = len(as_) + 2
@@ -73,6 +63,22 @@ def get_stats(posterior, vars, print_=True, problem=None):
 
     return prob_max, vars_max, probs_mar, std_mar
 
+"""Initiate a log text file with header, return log_path"""
+def init_log(site, YEAR, SEASON, files):
+    print(files)
+    log_name = f"log_{site}"
+    if YEAR:
+        log_name += f"_{YEAR}"
+    if SEASON:
+        log_name += f"_{SEASON}"
+    log_path = join(FIGURE_PATH, log_name+".txt")
+    f = open(log_path,"w+")
+    f.write("Log for bayesian inference on files \n")
+    for file in files:
+        f.write(file+"\n")
+    f.close()
+
+    return log_path
 
 """Print stats info to console and save as text file"""
 def stats_info(vars_max, std_mar, prob_max, prob_null, site, problem, log_path=0):
@@ -101,23 +107,6 @@ def save_param(vars_max, std_mar, var_names, site, problem):
     save_path = join(FIGURE_PATH, save_name+".csv")
     save_data = pd.DataFrame({"param":var_names, "mean":vars_max, "std":std_mar})
     save_data.to_csv(save_path)
-
-"""Initiate a log text file with header, return log_path"""
-def init_log(site, YEAR, SEASON, files):
-    print(files)
-    log_name = f"log_{site}"
-    if YEAR:
-        log_name += f"_{YEAR}"
-    if SEASON:
-        log_name += f"_{SEASON}"
-    log_path = join(FIGURE_PATH, log_name+".txt")
-    f = open(log_path,"w+")
-    f.write("Log for bayesian inference on files \n")
-    for file in files:
-        f.write(file+"\n")
-    f.close()
-
-    return log_path
 
 """ Reduces the posterior probability of a model to the special null hypothesis
 case where one or more of its parameters are set to zero. Returns the max."""
@@ -286,7 +275,7 @@ def plot_ratio_matrix(site, problem, ratio_matrix):
         cmap = "PRGn"
     else:
         cmap = "PRGn"
-    ax = sns.heatmap(log_ratio_matrix, mask=mask, vmin=-5, vmax=5, cmap=cmap,linewidths=0.5)
+    ax = sns.heatmap(log_ratio_matrix, annot=False, mask=mask, vmin=-5, vmax=5, cmap=cmap,linewidths=0.5)
 
     save_name = f"Ratio_matrix_{problem}_{site}"
     if YEAR:
