@@ -1,3 +1,10 @@
+# Bayesian linear regression and model inference
+# Written by Jérome Comte (jerome.simon@geolearn.ca)
+# and
+# Sophie Dufour-Beauséjour (s.dufour.beausejour@gmail.com)
+#
+# June 2020
+
 from os.path import join
 
 import numpy as np
@@ -271,11 +278,7 @@ def plot_ratio_matrix(site, problem, ratio_matrix):
             if i>j:
                 mask[i,j] = True
     log_ratio_matrix[np.abs(log_ratio_matrix) < 0.5] = 0
-    if "orbit21" in DATA_PATH:
-        cmap = "PRGn"
-    else:
-        cmap = "PRGn"
-    ax = sns.heatmap(log_ratio_matrix, annot=False, mask=mask, vmin=-5, vmax=5, cmap=cmap,linewidths=0.5)
+    ax = sns.heatmap(log_ratio_matrix, annot=False, mask=mask, vmin=-5, vmax=5, cmap="PRGn",linewidths=0.5)
 
     save_name = f"Ratio_matrix_{problem}_{site}"
     if YEAR:
