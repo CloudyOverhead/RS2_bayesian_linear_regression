@@ -1,5 +1,7 @@
 # RS2_bayesian_linear_regression
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3905286.svg)](https://doi.org/10.5281/zenodo.3905286)
+
 Bayesian linear regression and model comparison.
 Written by 
 Jérome Simon (jerome.simon@geolearn.ca) and
