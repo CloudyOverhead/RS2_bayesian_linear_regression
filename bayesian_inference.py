@@ -19,7 +19,7 @@ from prepare_variables import get_variables
 
 YEAR = "2016"
 SEASON = "apr" # jan or apr or 0
-DATA_PATH = "data"
+DATA_PATH = "data_orbit21"
 if "orbit21" in DATA_PATH:
     FIGURE_PATH = "figures/orbit21"
 else:
