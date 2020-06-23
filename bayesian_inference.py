@@ -1,5 +1,5 @@
 # Bayesian linear regression and model inference
-# Written by Jérome Comte (jerome.simon@geolearn.ca)
+# Written by Jérome Simon (jerome.simon@geolearn.ca)
 # and
 # Sophie Dufour-Beauséjour (s.dufour.beausejour@gmail.com)
 #
