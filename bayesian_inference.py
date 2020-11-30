@@ -19,7 +19,7 @@ from prepare_variables import get_variables
 
 # YEAR = "2016"
 SEASON = "jan-feb" # jan-feb or apr-may or 0
-DATA_PATH = "data_orbit13"
+DATA_PATH = "data"
 annotations = "/annotations" # "/annotations" or "" empty
 BAND_NAME = "HH"
 if "orbit21" in DATA_PATH:
@@ -306,6 +306,13 @@ def plot_ratio_matrix(site, problem, ratio_matrix):
 if __name__ == "__main__":
     STEPS = 64  # NOTE Reduce step size to make computations faster.
     band_name = BAND_NAME
+
+    field_list = list()
+    snow_slope_list = list()
+    snow_K_list = list()
+    ice_slope_list = list()
+    ice_K_list = list()
+
     for YEAR in  ["2016", "2017", "2018"]:
         if (YEAR == "2016") & (SEASON != "apr-may"):
             print("Not enough data for all year 2016 or jan 2016")
@@ -319,10 +326,22 @@ if __name__ == "__main__":
         for site, data, data_files in get_variables(data_path=DATA_PATH, year=YEAR, season=SEASON, band_name=BAND_NAME):
             # if ("orbit" in data_path) & (site != "D"):
             #     continue
+            field_name = site+"_"+YEAR[2:]
+            if SEASON == "jan-feb":
+                field_name += "01"
+            elif SEASON == "apr-may":
+                if YEAR == "2018":
+                    field_name += "05"
+                else:
+                    field_name += "04"
+            print(field_name)
+            field_list.append(field_name)
 
             print(f"Site {site}")
             log_path = init_log(site, YEAR, SEASON, data_files)
             snow, ice, wind, sig = data[["snow", "ice", "wind", band_name]].values.T
+
+
             """Snow"""
 
             product_dep = np.linspace(-.1, .5, STEPS)
@@ -358,6 +377,8 @@ if __name__ == "__main__":
                 ylabel="Snow thickness",
             )
             plot_parameters(site, "snow", vars, var_names, probs_mar)
+            snow_slope_list.append(vars_max[0])
+            snow_K_list.append(prob_max / prob_null)
 
             """Ice"""
 
@@ -395,6 +416,8 @@ if __name__ == "__main__":
             )
             plot_parameters(site, "ice", vars, var_names, probs_mar)
 
+            ice_slope_list.append(vars_max[0])
+            ice_K_list.append(prob_max / prob_null)
 
             """Ice vs Snow"""
             snow_dep = np.linspace(-1.5, 1, STEPS)
@@ -511,3 +534,7 @@ if __name__ == "__main__":
             if SEASON:
                 save_name += f"_{SEASON}"
             to_save.to_csv(join(FIGURE_PATH, save_name+".csv"))
+
+    # Save slope and K values
+    to_save = pd.DataFrame({"snow_slope": snow_slope_list, "snow_K": snow_K_list, "ice_slope": ice_slope_list, "ice_K": ice_K_list}, index=field_list)
+    to_save.to_csv(join(FIGURE_PATH, f"across-fjord-gradients.csv"))
