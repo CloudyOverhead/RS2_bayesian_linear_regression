@@ -14,7 +14,7 @@ ANGLE_SITE = {
     'K': -np.pi/8,
 }
 
-def read_data(data_path, site, year, season=0, normalize=True):
+def read_data(data_path, site, year, season=0, band_name=0, normalize=True):
     files = listdir(data_path)
     files = [
         file for file in files
@@ -26,12 +26,12 @@ def read_data(data_path, site, year, season=0, normalize=True):
         and "distance" not in file
         and year in file
     ]
-    if season == "jan":
+    if season == "jan-feb":
         files = [
             file for file in files
             if re.match(".*[0-9]{4}(01|02)[0-9]{2}.*", file)
         ]
-    elif season == "apr":
+    elif season == "apr-may":
         files = [
             file for file in files
             if re.match(".*[0-9]{4}(04|05)[0-9]{2}.*", file)
@@ -50,10 +50,10 @@ def read_data(data_path, site, year, season=0, normalize=True):
         snow = [s for s in d.columns if "snow" in s.lower()]
         assert len(ice) == 1 and len(snow) == 1
         ice, snow = ice[0], snow[0]
-        d = d[["long", "lat", ice, snow, "VV"]]
-        d.columns = ["long", "lat", "ice", "snow", "VV"]
+        d = d[["long", "lat", ice, snow, band_name]]
+        d.columns = ["long", "lat", "ice", "snow", band_name]
         if normalize:
-            for var in ["ice", "snow", "VV"]:
+            for var in ["ice", "snow", band_name]:
                 d.loc[:, var] = (d[var]-d[var].mean()) / d[var].std()
         data[i] = d
 
@@ -119,13 +119,13 @@ def compute_wind_shore_product(site, center, y, x):
     return product
 
 
-def get_variables(data_path, year=0, season=0, plot=False):
+def get_variables(data_path, year=0, season=0, band_name=0, plot=False):
     files = [
         file for file in listdir(data_path)
         if "bathymetry" in file and file[-3:] == 'tif'
     ]
     for site in ["S", "D", "K"]:
-        if (site == "S") & (year == "2016") & (season != "jan"):
+        if (site == "S") & (year == "2016") & (season != "jan-feb"):
             continue
         if ("orbit" in data_path) & (site != "D"):
             continue
@@ -135,9 +135,9 @@ def get_variables(data_path, year=0, season=0, plot=False):
         file_path = [file for file in files if (site in file)][0]
         _, transform = load_bathymetry(join(data_path, file_path))
         velocity = np.load(join(data_path, f"{site}_velocity.npy"))
-        data, data_files = read_data(data_path, site, year, season)
+        data, data_files = read_data(data_path, site, year, season, band_name)
         # data = reads_data(site, year, remove_apr=True, remove_jan=False)
-        x_data, y_data, ice, snow, vv = [
+        x_data, y_data, ice, snow, sig = [
             col for _, col in data.iteritems()
         ]
 

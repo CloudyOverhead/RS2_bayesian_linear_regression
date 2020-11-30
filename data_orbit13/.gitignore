@@ -6,7 +6,3 @@ __pycache__/
 data_analyzed/
 figures/C-band/*.csv
 figures/C-band/*.txt
-figures/orbit21/*.csv
-figures/orbit21/*.txt
-figures/annotations
-figures_200623/
