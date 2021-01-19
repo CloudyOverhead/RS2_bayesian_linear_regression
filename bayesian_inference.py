@@ -18,9 +18,9 @@ import sys
 from prepare_variables import get_variables
 
 # YEAR = "2016"
-SEASON = "jan-feb" # jan-feb or apr-may or 0
-DATA_PATH = "data"
-annotations = "/annotations" # "/annotations" or "" empty
+SEASON = "apr-may" # jan-feb or apr-may or 0
+DATA_PATH = "data_orbit13_win_9"
+annotations = "/annotations/576m2" # "/annotations" or "" empty
 BAND_NAME = "HH"
 if "orbit21" in DATA_PATH:
     FIGURE_PATH = f"figures{annotations}/orbit21/{SEASON}"

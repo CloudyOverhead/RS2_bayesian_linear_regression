@@ -1,0 +1,8 @@
+desktop.ini
+*.pdf
+*.png
+.DS_Store
+__pycache__/
+data_analyzed/
+figures/C-band/*.csv
+figures/C-band/*.txt
